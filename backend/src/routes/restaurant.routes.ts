@@ -48,6 +48,37 @@ router.patch("/profile", requireAuth, requireRestaurantOwner, async (req, res, n
   }
 });
 
+router.post("/menu-items", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const description = typeof req.body?.description === "string" ? req.body.description.trim() : "";
+    const categoryName = typeof req.body?.category === "string" ? req.body.category.trim() : "General";
+    const price = Number(req.body?.price);
+    const image = typeof req.body?.image === "string" ? req.body.image.trim() : "";
+    const isVeg = req.body?.isVeg !== false;
+    if (!name || !Number.isFinite(price) || price < 0 || !categoryName) {
+      res.status(400).json({ success: false, message: "Dish name, category, and a valid price are required.", code: "INVALID_MENU_ITEM" });
+      return;
+    }
+    const restaurant = await prisma.restaurant.findFirst({ where: { ownerId: req.user!.id }, select: { id: true } });
+    if (!restaurant) {
+      res.status(404).json({ success: false, message: "No restaurant is linked to this owner.", code: "RESTAURANT_NOT_FOUND" });
+      return;
+    }
+    const category = await prisma.menuCategory.upsert({
+      where: { restaurantId_name: { restaurantId: restaurant.id, name: categoryName } },
+      update: {},
+      create: { restaurantId: restaurant.id, name: categoryName, displayOrder: 0 },
+    });
+    const item = await prisma.menuItem.create({
+      data: { restaurantId: restaurant.id, categoryId: category.id, name, description: description || null, price, image: image || null, isVeg },
+    });
+    res.status(201).json({ success: true, data: item });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get("/reviews", requireAuth, requireRestaurantOwner, async (req, res, next) => {
   try {
     const reviews = await prisma.review.findMany({

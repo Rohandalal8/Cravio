@@ -49,6 +49,28 @@ const riderSchema = z.object({
   profileImage: z.string().url().max(2000).optional().nullable(),
 });
 
+const oppositePartnerRoleFor = (kind: "owner" | "rider") => kind === "owner" ? UserRole.RIDER : UserRole.RESTAURANT_OWNER;
+
+async function hasRole(userId: string, role: UserRole) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  return user?.role === role;
+}
+
+async function rejectIfOppositePartner(req: Parameters<typeof requireAuth>[0], res: Parameters<typeof requireAuth>[1], kind: "owner" | "rider") {
+  if (await hasRole(req.user!.id, oppositePartnerRoleFor(kind))) {
+    res.status(409).json({
+      success: false,
+      message: kind === "owner" ? "Riders cannot apply to become restaurant owners." : "Restaurant owners cannot apply to become riders.",
+      code: "PARTNER_ROLE_CONFLICT",
+    });
+    return true;
+  }
+  return false;
+}
+
 function validationError(error: z.ZodError) {
   return error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ");
 }
@@ -64,17 +86,16 @@ async function notifyAdmins(title: string, message: string) {
 
 router.get("/status", requireAuth, async (req, res, next) => {
   try {
-    const [user, ownerApplication, riderApplication, assignments] = await Promise.all([
+    const [user, ownerApplication, riderApplication] = await Promise.all([
       prisma.user.findUnique({ where: { id: req.user!.id }, select: { role: true } }),
       prisma.restaurantApplication.findFirst({ where: { applicantId: req.user!.id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, rejectionReason: true, reviewedAt: true, createdAt: true } }),
       prisma.riderApplication.findFirst({ where: { applicantId: req.user!.id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, rejectionReason: true, reviewedAt: true, createdAt: true } }),
-      prisma.userRoleAssignment.findMany({ where: { userId: req.user!.id }, select: { role: true } }),
     ]);
     return res.json({
       success: true,
       data: {
         role: user?.role ?? req.user!.role,
-        roles: Array.from(new Set([user?.role ?? req.user!.role, ...assignments.map((assignment) => assignment.role)])),
+        roles: [user?.role ?? req.user!.role],
         ownerApplication,
         riderApplication,
       },
@@ -86,6 +107,7 @@ router.get("/status", requireAuth, async (req, res, next) => {
 
 router.post("/owner", requireAuth, async (req, res, next) => {
   try {
+    if (await rejectIfOppositePartner(req, res, "owner")) return;
     const parsed = ownerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(422).json({ success: false, message: validationError(parsed.error), code: "VALIDATION_ERROR" });
 
@@ -110,6 +132,7 @@ router.post("/owner", requireAuth, async (req, res, next) => {
 
 router.post("/rider", requireAuth, async (req, res, next) => {
   try {
+    if (await rejectIfOppositePartner(req, res, "rider")) return;
     const parsed = riderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(422).json({ success: false, message: validationError(parsed.error), code: "VALIDATION_ERROR" });
 

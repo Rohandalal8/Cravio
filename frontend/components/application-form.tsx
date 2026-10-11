@@ -54,6 +54,11 @@ export function ApplicationForm({ kind }: { kind: Kind }) {
   if (!user) return <main className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center px-5 text-center"><h1 className="font-serif text-4xl">Sign in to apply</h1><Link href="/login" className="mt-6 rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-white">Go to sign in</Link></main>;
   const account = user;
   const userId = account.id;
+  const role = status.data?.role.trim().toUpperCase() ?? account.role;
+  const hasOppositePartnerRole = kind === "owner" ? role === "RIDER" : role === "RESTAURANT_OWNER";
+  if (hasOppositePartnerRole) {
+    return <main className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center px-5 text-center"><h1 className="font-serif text-4xl">Partner application unavailable</h1><p className="mt-4 leading-7 text-[#81786c]">Your account is already an approved {kind === "owner" ? "rider" : "restaurant owner"} account. Partner roles cannot be combined.</p><Link href="/settings" className="mt-6 rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-white">Back to settings</Link></main>;
+  }
   const application = existingApplication(status.data, kind);
   if (application?.status === "PENDING" || application?.status === "APPROVED") {
     return <main className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center px-5 text-center"><h1 className="font-serif text-4xl">{application.status === "APPROVED" ? "Application already approved" : "Application under review"}</h1><p className="mt-4 leading-7 text-[#81786c]">{application.status === "APPROVED" ? "Your partner access is ready from Settings." : "Our team is reviewing your application. We will notify you when there is an update."}</p><Link href="/settings" className="mt-6 rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-white">Back to settings</Link></main>;

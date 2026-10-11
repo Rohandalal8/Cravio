@@ -74,14 +74,14 @@ router.patch("/rider-applications/:id", requireAuth, requireAdmin, async (req, r
       });
       if (status === ApplicationStatus.APPROVED) {
         const applicant = await transaction.user.findUnique({ where: { id: application.applicantId }, select: { role: true } });
+        if (applicant?.role === UserRole.RESTAURANT_OWNER) throw new Error("PARTNER_ROLE_CONFLICT");
+        await transaction.userRoleAssignment.deleteMany({ where: { userId: application.applicantId, role: UserRole.RESTAURANT_OWNER } });
         await transaction.userRoleAssignment.upsert({
           where: { userId_role: { userId: application.applicantId, role: UserRole.RIDER } },
           update: {},
           create: { userId: application.applicantId, role: UserRole.RIDER },
         });
-        if (applicant?.role === UserRole.CUSTOMER) {
-          await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RIDER } });
-        }
+        await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RIDER } });
         await transaction.rider.upsert({
           where: { userId: application.applicantId },
           update: { vehicleType: application.vehicleType, vehicleNumber: application.vehicleNumber, licenseNumber: application.licenseNumber },
@@ -105,6 +105,10 @@ router.patch("/rider-applications/:id", requireAuth, requireAdmin, async (req, r
   } catch (error) {
     if (error instanceof Error && error.message === "APPLICATION_NOT_PENDING") {
       res.status(409).json({ success: false, message: "Only pending applications can be reviewed.", code: "APPLICATION_NOT_PENDING" });
+      return;
+    }
+    if (error instanceof Error && error.message === "PARTNER_ROLE_CONFLICT") {
+      res.status(409).json({ success: false, message: "This user already has the other partner role.", code: "PARTNER_ROLE_CONFLICT" });
       return;
     }
     next(error);
@@ -140,6 +144,8 @@ router.patch("/restaurant-applications/:id", requireAuth, requireAdmin, async (r
       if (status === ApplicationStatus.APPROVED) {
         const slug = `${application.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${application.id.slice(-6)}`;
         const applicant = await transaction.user.findUnique({ where: { id: application.applicantId }, select: { role: true } });
+        if (applicant?.role === UserRole.RIDER) throw new Error("PARTNER_ROLE_CONFLICT");
+        await transaction.userRoleAssignment.deleteMany({ where: { userId: application.applicantId, role: UserRole.RIDER } });
         const restaurant = await transaction.restaurant.create({
           data: {
             ownerId: application.applicantId,
@@ -166,9 +172,7 @@ router.patch("/restaurant-applications/:id", requireAuth, requireAdmin, async (r
           update: {},
           create: { userId: application.applicantId, role: UserRole.RESTAURANT_OWNER },
         });
-        if (applicant?.role === UserRole.CUSTOMER) {
-          await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RESTAURANT_OWNER } });
-        }
+        await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RESTAURANT_OWNER } });
       }
       await transaction.notification.create({
         data: {
@@ -187,6 +191,10 @@ router.patch("/restaurant-applications/:id", requireAuth, requireAdmin, async (r
   } catch (error) {
     if (error instanceof Error && error.message === "APPLICATION_NOT_PENDING") {
       res.status(409).json({ success: false, message: "Only pending applications can be reviewed.", code: "APPLICATION_NOT_PENDING" });
+      return;
+    }
+    if (error instanceof Error && error.message === "PARTNER_ROLE_CONFLICT") {
+      res.status(409).json({ success: false, message: "This user already has the other partner role.", code: "PARTNER_ROLE_CONFLICT" });
       return;
     }
     next(error);

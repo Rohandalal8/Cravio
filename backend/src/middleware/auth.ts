@@ -2,12 +2,12 @@ import type { NextFunction, Request, Response } from "express";
 
 import admin from "../config/firebase.js";
 import prisma from "../config/prisma.js";
-import type { UserRole } from "@prisma/client";
+import { UserRole, type UserRole as UserRoleType } from "@prisma/client";
 
 type AuthenticatedUser = {
   id: string;
   firebaseUid?: string;
-  role: UserRole;
+  role: UserRoleType;
   status: "ACTIVE" | "SUSPENDED";
 };
 
@@ -64,7 +64,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export function requireRole(...roles: UserRole[]) {
+export function requireRole(...roles: UserRoleType[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(403).json({
@@ -75,7 +75,19 @@ export function requireRole(...roles: UserRole[]) {
     }
 
     try {
-      if (roles.includes(req.user.role)) return next();
+      // Rider and restaurant-owner access is mutually exclusive. Do not use
+      // legacy role assignments to grant access to the other partner portal.
+      const partnerRoles: UserRoleType[] = [UserRole.RIDER, UserRole.RESTAURANT_OWNER];
+      if (roles.some((role) => partnerRoles.includes(role))) {
+        if (roles.includes(req.user.role)) return next();
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to perform this action.",
+          code: "FORBIDDEN",
+        });
+      } else if (roles.includes(req.user.role)) {
+        return next();
+      }
 
       const assignments = await prisma.userRoleAssignment.findMany({
         where: { userId: req.user.id, role: { in: roles } },

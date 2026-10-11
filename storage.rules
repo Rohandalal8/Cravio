@@ -11,5 +11,12 @@ service firebase.storage {
         request.resource.size <= 10 * 1024 * 1024 &&
         request.resource.contentType.matches('application/pdf|image/jpeg|image/png|image/webp');
     }
+    match /restaurants/{userId}/menu/{imageName} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/jpeg|image/png|image/webp');
+    }
   }
 }

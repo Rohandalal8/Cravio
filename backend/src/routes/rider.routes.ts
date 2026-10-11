@@ -133,7 +133,11 @@ router.get("/dashboard", requireAuth, requireRider, async (req, res, next) => {
 router.patch("/availability", requireAuth, requireRider, async (req, res, next) => {
   try {
     const isOnline = req.body?.isOnline === true;
-    const rider = await prisma.rider.update({ where: { userId: req.user!.id }, data: { isOnline, isAvailable: isOnline } });
+    const rider = await prisma.rider.update({
+      where: { userId: req.user!.id },
+      data: { isOnline, isAvailable: isOnline },
+      include: { user: { select: { name: true, email: true, phone: true, avatar: true } } },
+    });
     res.json({ success: true, data: rider });
   } catch (error) {
     next(error);

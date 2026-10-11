@@ -92,7 +92,10 @@ export default function SettingsPage() {
   }
 
   const { data } = status;
-  const roles = new Set(data.roles);
+  const role = data.role.trim().toUpperCase();
+  const roles = new Set([role]);
+  const isRider = role === "RIDER";
+  const isRestaurantOwner = role === "RESTAURANT_OWNER";
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-10 text-[#28241f] sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1200px]">
@@ -100,8 +103,8 @@ export default function SettingsPage() {
         <h1 className="mt-3 font-serif text-5xl tracking-[-0.04em]">Settings</h1>
         <p className="mt-4 max-w-2xl leading-7 text-[#6f675d]">Manage your Luxebites profile and choose how you would like to partner with us.</p>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <PartnerCard kind="restaurant" title="Restaurant Partner" description="List your restaurant, manage your menu, and receive orders from Luxebites customers." href="/apply/owner" portalUrl={restaurantPortalUrl} application={data.ownerApplication} approved={roles.has("RESTAURANT_OWNER")} />
-          <PartnerCard kind="rider" title="Delivery Partner" description="Earn by delivering orders to Luxebites customers with a flexible delivery workspace." href="/apply/rider" portalUrl={riderPortalUrl} application={data.riderApplication} approved={roles.has("RIDER")} />
+          {!isRider ? <PartnerCard kind="restaurant" title="Restaurant Partner" description="List your restaurant, manage your menu, and receive orders from Luxebites customers." href="/apply/owner" portalUrl={restaurantPortalUrl} application={data.ownerApplication} approved={roles.has("RESTAURANT_OWNER")} /> : null}
+          {!isRestaurantOwner ? <PartnerCard kind="rider" title="Delivery Partner" description="Earn by delivering orders to Luxebites customers with a flexible delivery workspace." href="/apply/rider" portalUrl={riderPortalUrl} application={data.riderApplication} approved={roles.has("RIDER")} /> : null}
         </div>
       </div>
     </main>

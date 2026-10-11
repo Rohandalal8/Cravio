@@ -38,7 +38,10 @@ export default function RiderShell({ children }: { children: React.ReactNode }) 
   async function toggle() {
     if (!rider || busy) return;
     setBusy(true);
-    try { const next = await api<Rider>("/rider/availability", { method: "PATCH", body: JSON.stringify({ isOnline: !rider.isOnline }) }); setRider(next); } finally { setBusy(false); }
+    try {
+      const next = await api<Rider>("/rider/availability", { method: "PATCH", body: JSON.stringify({ isOnline: !rider.isOnline }) });
+      setRider({ ...next, user: next.user ?? rider.user });
+    } finally { setBusy(false); }
   }
   async function logout() { if (auth) await signOut(auth); window.localStorage.removeItem("luxebites-token"); router.replace("/login"); }
   return <div className="app-shell">

@@ -28,6 +28,7 @@ export function OwnerPage({ kind }: { kind: Kind }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
+  const [togglingOpen, setTogglingOpen] = useState(false);
 
   useEffect(() => onAuthStateChanged(auth, (nextUser) => {
     setUser(nextUser);
@@ -45,19 +46,38 @@ export function OwnerPage({ kind }: { kind: Kind }) {
     })();
   }), [kind, refresh]);
 
+  async function toggleRestaurantOpen() {
+    if (!user || !data || togglingOpen) return;
+    const profile = data as Profile;
+    setTogglingOpen(true);
+    setError("");
+    try {
+      const token = await user.getIdToken();
+      const updated = await apiFetch<Profile>("/restaurant/profile", token, {
+        method: "PATCH",
+        body: JSON.stringify({ isOpen: !profile.isOpen }),
+      });
+      setData((current: Profile | null) => current ? { ...current, ...updated } : updated);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update restaurant status.");
+    } finally {
+      setTogglingOpen(false);
+    }
+  }
+
   if (!user) return <main className="center"><div className="login-card"><span className="eyebrow">Owner access</span><h1>Sign in to continue.</h1><p>Use an active restaurant-owner account to access this workspace.</p><a className="button" href="/login">Open owner sign in</a></div></main>;
   const [eyebrow, title] = labels[kind];
-  return <RouteShell><main className="main"><header><div><span className="eyebrow">{eyebrow}</span><h1 className="title">{title}</h1></div></header>{loading ? <div className="empty">Loading live restaurant data...</div> : error ? <div className="error">{error}</div> : <WorkspaceContent kind={kind} data={data} onRefresh={() => setRefresh((value) => value + 1)} />}</main></RouteShell>;
+  return <RouteShell><main className="main"><header><div><span className="eyebrow">{eyebrow}</span><h1 className="title">{title}</h1></div></header>{loading ? <div className="empty">Loading live restaurant data...</div> : error ? <div className="error">{error}</div> : <WorkspaceContent kind={kind} data={data} onRefresh={() => setRefresh((value) => value + 1)} onToggleOpen={() => void toggleRestaurantOpen()} togglingOpen={togglingOpen} />}</main></RouteShell>;
 }
 
-function WorkspaceContent({ kind, data, onRefresh }: { kind: Kind; data: unknown; onRefresh: () => void }) {
+function WorkspaceContent({ kind, data, onRefresh, onToggleOpen, togglingOpen }: { kind: Kind; data: unknown; onRefresh: () => void; onToggleOpen: () => void; togglingOpen: boolean }) {
   if (kind === "orders") {
     const orders = data as Order[];
     return <section className="table"><div className="table-head"><h2>Live orders</h2><span>{orders.length} total</span></div>{orders.length ? orders.map((order) => <div className="row" key={order.id}><span><b>#{order.id.slice(-6).toUpperCase()}</b><small>{order.items.map((item) => `${item.name} ×${item.quantity}`).join(", ")}</small></span><span className={`badge ${order.status.toLowerCase()}`}>{order.status}</span><span>₹{order.total.toFixed(2)}</span><a className="pill" href={`/orders/${order.id}`}>Details</a></div>) : <div className="empty">No orders have arrived yet.</div>}</section>;
   }
   if (kind === "menu" || kind === "restaurant") {
     const profile = data as Profile;
-    return <><section className="grid"><div className="card"><strong>Restaurant</strong><div className="value">{profile.name}</div></div><div className="card"><strong>Status</strong><div className="value">{profile.isOpen ? "Open" : "Closed"}</div></div><div className="card"><strong>Rating</strong><div className="value">{profile.rating.toFixed(1)} <small>/ 5</small></div></div></section><section className="table"><div className="table-head"><h2>{kind === "menu" ? "Menu items" : "Profile overview"}</h2><span>{profile.menuItems?.length ?? 0} items</span></div>{kind === "menu" && profile.menuItems?.map((item) => <div className="row" key={item.id}><span><b>{item.name}</b><small>{item.isAvailable ? "Available" : "Unavailable"}</small></span><span>{item.isAvailable ? "Live" : "Paused"}</span><span>₹{item.price.toFixed(2)}</span><button className="pill" onClick={onRefresh}>Refresh</button></div>)}{kind === "menu" && !profile.menuItems?.length && <div className="empty">No menu items have been added yet.</div>}{kind === "restaurant" && <div className="empty"><p>{profile.description ?? "Add a description to tell guests what makes your restaurant special."}</p><a className="button" href="/restaurant/edit">Edit profile</a></div>}</section></>;
+    return <><section className="grid"><div className="card"><strong>Restaurant</strong><div className="value">{profile.name}</div></div><div className="card"><strong>Status</strong><div className="value">{profile.isOpen ? "Open" : "Closed"}</div><button className="button" onClick={onToggleOpen} disabled={togglingOpen}>{togglingOpen ? "Saving..." : profile.isOpen ? "Close restaurant" : "Open restaurant"}</button></div><div className="card"><strong>Rating</strong><div className="value">{profile.rating.toFixed(1)} <small>/ 5</small></div></div></section><section className="table"><div className="table-head"><div><h2>{kind === "menu" ? "Menu items" : "Profile overview"}</h2>{kind === "menu" && <span>{profile.menuItems?.length ?? 0} items</span>}</div>{kind === "menu" && <a className="button" href="/menu/items">+ Add dish</a>}</div>{kind === "menu" && profile.menuItems?.map((item) => <div className="row" key={item.id}><span><b>{item.name}</b><small>{item.isAvailable ? "Available" : "Unavailable"}</small></span><span>{item.isAvailable ? "Live" : "Paused"}</span><span>₹{item.price.toFixed(2)}</span><button className="pill" onClick={onRefresh}>Refresh</button></div>)}{kind === "menu" && !profile.menuItems?.length && <div className="empty">No menu items have been added yet. Click <a href="/menu/items">Add dish</a> to create your first dish.</div>}{kind === "restaurant" && <div className="empty"><p>{profile.description ?? "Add a description to tell guests what makes your restaurant special."}</p><a className="button" href="/restaurant/edit">Edit profile</a></div>}</section></>;
   }
   if (kind === "reviews") {
     const reviews = data as Review[];
