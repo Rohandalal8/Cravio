@@ -1,5 +1,4 @@
-import { auth, storage } from "@/lib/firebase";
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { auth } from "@/lib/firebase";
 
 export type ApplicationState = "PENDING" | "APPROVED" | "REJECTED";
 export type PlatformRole = "CUSTOMER" | "RESTAURANT_OWNER" | "RIDER" | "ADMIN";
@@ -53,14 +52,59 @@ export async function submitApplication(type: "owner" | "rider", data: Record<st
 }
 
 export function uploadApplicationFile(file: File, applicationType: "owner" | "rider", documentType: string, onProgress?: (progress: number) => void) {
-  if (!auth?.currentUser || !storage) throw new Error("Secure document storage is not configured.");
+  const currentUser = auth?.currentUser;
+  if (!currentUser) throw new Error("Your session has expired. Please sign in again.");
   if (file.size > 10 * 1024 * 1024) throw new Error("Each document must be smaller than 10 MB.");
   if (!["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type)) {
     throw new Error("Documents must be PDF, JPG, PNG, or WEBP files.");
   }
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const upload = uploadBytesResumable(ref(storage, `applications/${auth.currentUser.uid}/${applicationType}/${documentType}-${Date.now()}-${safeName}`), file, { contentType: file.type });
-  return new Promise<string>((resolve, reject) => {
-    upload.on("state_changed", (snapshot) => onProgress?.(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)), (error) => reject(new Error(`Document upload failed: ${error.message}`)), async () => resolve(await getDownloadURL(upload.snapshot.ref)));
-  });
+  return (async () => {
+    const token = await currentUser.getIdToken();
+    const signatureResponse = await fetch(`${apiUrl}/uploads/signature`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ uploadType: "application", applicationType, documentType }),
+    });
+    const signaturePayload = (await signatureResponse.json().catch(() => null)) as {
+      data?: { apiKey: string; cloudName: string; folder: string; publicId: string; signature: string; timestamp: number; uploadUrl: string };
+      message?: string;
+    } | null;
+    if (!signatureResponse.ok || !signaturePayload?.data) {
+      throw new Error(signaturePayload?.message ?? "Unable to prepare document upload.");
+    }
+
+    const uploadData = signaturePayload.data;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", uploadData.apiKey);
+    formData.append("folder", uploadData.folder);
+    formData.append("public_id", uploadData.publicId);
+    formData.append("signature", uploadData.signature);
+    formData.append("timestamp", String(uploadData.timestamp));
+
+    return new Promise<string>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open("POST", uploadData.uploadUrl);
+      request.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+      });
+      request.addEventListener("error", () => reject(new Error("Document upload failed. Please try again.")));
+      request.addEventListener("load", () => {
+        let response: { secure_url?: string; error?: { message?: string } };
+        try {
+          response = JSON.parse(request.responseText) as typeof response;
+        } catch {
+          reject(new Error("Document upload returned an invalid response."));
+          return;
+        }
+        if (request.status < 200 || request.status >= 300 || !response.secure_url) {
+          reject(new Error(response.error?.message ?? "Document upload failed. Please try again."));
+          return;
+        }
+        onProgress?.(100);
+        resolve(response.secure_url);
+      });
+      request.send(formData);
+    });
+  })();
 }

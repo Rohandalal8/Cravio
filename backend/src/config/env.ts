@@ -12,6 +12,9 @@ const envSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().optional().default(""),
   FIREBASE_CLIENT_EMAIL: z.string().optional().default(""),
   FIREBASE_PRIVATE_KEY: z.string().optional().default(""),
+  CLOUDINARY_CLOUD_NAME: z.string().optional().default(""),
+  CLOUDINARY_API_KEY: z.string().optional().default(""),
+  CLOUDINARY_API_SECRET: z.string().optional().default(""),
 });
 
 export const env = envSchema.parse(process.env);

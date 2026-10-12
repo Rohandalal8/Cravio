@@ -15,6 +15,7 @@ import notificationsRoutes from "./routes/notifications.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import riderRoutes from "./routes/rider.routes.js";
 import restaurantsRoutes from "./routes/restaurants.routes.js";
+import uploadsRoutes from "./routes/uploads.routes.js";
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/rider", riderRoutes);
+app.use("/api/uploads", uploadsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

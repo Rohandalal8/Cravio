@@ -1,11 +1,10 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-
 import { RouteShell } from "@/components/route-shell";
+import { uploadMenuImage } from "@/lib/cloudinary";
 import { apiFetch } from "@/lib/api";
-import { auth, storage } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 
 type MenuItem = { id: string; name: string; description: string | null; price: number; image: string | null; isVeg: boolean; isAvailable: boolean };
 
@@ -47,10 +46,7 @@ export default function ItemsPage() {
       const token = await auth.currentUser.getIdToken();
       let imageUrl = "";
       if (image) {
-        const safeName = image.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const imageRef = ref(storage, `restaurants/${auth.currentUser.uid}/menu/${Date.now()}-${safeName}`);
-        await uploadBytes(imageRef, image, { contentType: image.type });
-        imageUrl = await getDownloadURL(imageRef);
+        imageUrl = await uploadMenuImage(image, token);
       }
       await apiFetch("/restaurant/menu-items", token, {
         method: "POST",
