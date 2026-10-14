@@ -1,11 +1,33 @@
 @import "tailwindcss";
 
 :root {
-	--font-display: Georgia, "Times New Roman", serif;
+	--brand-primary: #8b1e3f;
+	--brand-primary-hover: #64152d;
+	--brand-accent: #e85d4a;
+	--surface-primary: #ffffff;
+	--surface-secondary: #fff8f1;
+	--surface-muted: #f7f4f5;
+	--text-primary: #252126;
+	--text-secondary: #716a70;
+	--border-default: #eae3e5;
+	--status-success: #198754;
+	--status-warning: #d99a18;
+	--status-error: #c93636;
+	--status-information: #2878b5;
+	--radius-sm: 0.5rem;
+	--radius-md: 0.75rem;
+	--radius-lg: 1rem;
+	--shadow-sm: 0 1px 3px rgb(37 33 38 / 0.08);
+	--shadow-md: 0 12px 30px rgb(37 33 38 / 0.1);
+	--transition-default: 180ms ease;
+	--font-display: "Inter", Arial, sans-serif;
 }
 
 body {
 	margin: 0;
+	background: var(--surface-secondary);
+	color: var(--text-primary);
+	font-family: "Inter", Arial, sans-serif;
 }
 
 .font-serif {
@@ -14,23 +36,23 @@ body {
 
 .auth-input {
 	width: 100%;
-	border: 1px solid #ded7cb;
-	border-radius: 0.75rem;
-	background: #fff;
+	border: 1px solid var(--border-default);
+	border-radius: var(--radius-md);
+	background: var(--surface-primary);
 	padding: 0.875rem 1rem;
-	color: #28241f;
+	color: var(--text-primary);
 	font-size: 0.9375rem;
 	outline: none;
-	transition: border-color 150ms ease, box-shadow 150ms ease;
+	transition: border-color var(--transition-default), box-shadow var(--transition-default);
 }
 
 .auth-input::placeholder {
-	color: #b2aa9f;
+	color: var(--text-secondary);
 }
 
 .auth-input:focus {
-	border-color: #d97732;
-	box-shadow: 0 0 0 3px rgba(217, 119, 50, 0.14);
+	border-color: var(--brand-primary);
+	box-shadow: 0 0 0 3px rgb(139 30 63 / 0.14);
 }
 
 .auth-button {
@@ -38,16 +60,34 @@ body {
 	width: 100%;
 	align-items: center;
 	justify-content: space-between;
-	border-radius: 0.75rem;
-	background: #273b32;
+	border: 0;
+	border-radius: var(--radius-md);
+	background: var(--brand-primary);
 	padding: 0.875rem 1.125rem;
-	color: #fffaf1;
+	color: var(--surface-primary);
 	font-size: 0.9375rem;
 	font-weight: 700;
-	transition: background 150ms ease, transform 150ms ease;
+	transition: background var(--transition-default), transform var(--transition-default);
 }
 
 .auth-button:hover {
-	background: #1c2d25;
+	background: var(--brand-primary-hover);
 	transform: translateY(-1px);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+	outline: 3px solid rgb(232 93 74 / 0.3);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		scroll-behavior: auto !important;
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+	}
 }

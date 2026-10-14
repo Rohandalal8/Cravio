@@ -17,11 +17,11 @@ function CheckoutPageContent() {
 
   if (!items.length && !orderNumber) {
     return (
-      <main className="min-h-screen bg-[#f7f4ee] px-5 py-10 text-[#28241f] sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-[700px] rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] p-10 text-center shadow-[0_16px_40px_rgba(40,36,31,0.04)]">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Checkout</p>
+      <main className="min-h-screen bg-[#fff8f1] px-5 py-10 text-[#252126] sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-[700px] rounded-2xl border border-[#eae3e5] bg-white p-10 text-center shadow-[0_16px_40px_rgba(37,33,38,0.06)]">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">Checkout</p>
           <h1 className="mt-4 font-serif text-4xl tracking-[-0.04em]">Your cart is empty.</h1>
-          <Link href="/restaurants" className="mt-8 inline-flex rounded-full bg-[#273b32] px-5 py-3 text-sm font-semibold text-[#fffaf1]">
+          <Link href="/restaurants" className="mt-8 inline-flex rounded-full bg-[#8b1e3f] px-5 py-3 text-sm font-semibold text-white">
             Start shopping
           </Link>
         </div>
@@ -70,12 +70,12 @@ function CheckoutPageContent() {
 
   if (orderNumber) {
     return (
-      <main className="min-h-screen bg-[#f7f4ee] px-5 py-10 text-[#28241f] sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-[700px] rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] p-10 text-center shadow-[0_16px_40px_rgba(40,36,31,0.04)]">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Order confirmed</p>
+      <main className="min-h-screen bg-[#fff8f1] px-5 py-10 text-[#252126] sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-[700px] rounded-2xl border border-[#eae3e5] bg-white p-10 text-center shadow-[0_16px_40px_rgba(37,33,38,0.06)]">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">Order confirmed</p>
           <h1 className="mt-4 font-serif text-4xl tracking-[-0.04em]">{orderNumber}</h1>
           <p className="mt-3 text-base leading-7 text-[#665d55]">Your food is being prepared and your rider is on the way.</p>
-          <Link href="/restaurants" className="mt-8 inline-flex rounded-full bg-[#273b32] px-5 py-3 text-sm font-semibold text-[#fffaf1]">
+          <Link href="/restaurants" className="mt-8 inline-flex rounded-full bg-[#8b1e3f] px-5 py-3 text-sm font-semibold text-white">
             Order more food
           </Link>
         </div>
@@ -84,10 +84,10 @@ function CheckoutPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f4ee] px-5 py-10 text-[#28241f] sm:px-8 lg:px-12">
+    <main className="min-h-screen bg-[#fff8f1] px-5 py-10 text-[#252126] sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1100px] grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] p-6 shadow-[0_16px_40px_rgba(40,36,31,0.04)]">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Delivery details</p>
+        <section className="rounded-2xl border border-[#eae3e5] bg-white p-6 shadow-[0_16px_40px_rgba(37,33,38,0.06)]">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">Delivery details</p>
           <h1 className="mt-2 font-serif text-4xl tracking-[-0.04em]">Checkout</h1>
 
           <div className="mt-6 space-y-5">
@@ -103,8 +103,8 @@ function CheckoutPageContent() {
           </div>
         </section>
 
-        <aside className="rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] p-6 shadow-[0_16px_40px_rgba(40,36,31,0.04)]">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Order summary</p>
+        <aside className="rounded-2xl border border-[#eae3e5] bg-white p-6 shadow-[0_16px_40px_rgba(37,33,38,0.06)]">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">Order summary</p>
           <div className="mt-5 space-y-4">
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-3 text-sm text-[#5b554e]">
@@ -125,7 +125,7 @@ function CheckoutPageContent() {
 
           {error ? <p className="mt-4 rounded-xl border border-[#f2d4d4] bg-[#fff6f5] p-3 text-sm text-[#8b1f1f]">{error}</p> : null}
 
-          <button type="button" disabled={isSubmitting} onClick={handleSubmit} className="mt-6 inline-flex w-full justify-center rounded-full bg-[#273b32] px-5 py-3 text-sm font-semibold text-[#fffaf1] disabled:cursor-not-allowed disabled:opacity-70">
+          <button type="button" disabled={isSubmitting} onClick={handleSubmit} className="mt-6 inline-flex w-full justify-center rounded-full bg-[#8b1e3f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#64152d] disabled:cursor-not-allowed disabled:opacity-70">
             {isSubmitting ? "Placing order..." : "Place order"}
           </button>
         </aside>

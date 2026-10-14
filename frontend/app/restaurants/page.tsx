@@ -48,10 +48,10 @@ export default function RestaurantsPage() {
   }, [search, cuisine, vegOnly]);
 
   return (
-    <main className="min-h-screen bg-[#f7f4ee] text-[#28241f]">
-      <section className="border-b border-[#e8e0d4] bg-[#273b32] px-5 py-14 text-[#fffaf1] sm:px-8 lg:px-12 lg:py-18">
+    <main className="min-h-screen bg-[#fff8f1] text-[#252126]">
+      <section className="border-b border-[#64152d] bg-[#8b1e3f] px-5 py-14 text-white sm:px-8 lg:px-12 lg:py-18">
         <div className="mx-auto max-w-[1200px]">
-          <p className="mb-4 text-xs font-bold tracking-[0.25em] text-[#f5c56b] uppercase">A better table awaits</p>
+          <p className="mb-4 text-xs font-bold tracking-[0.25em] text-[#ffd0c8] uppercase">A better table awaits</p>
           <h1 className="font-serif text-5xl leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-7xl">Good food is closer than you think.</h1>
 
           <div className="mt-8 flex max-w-3xl flex-col gap-3 sm:flex-row">
@@ -61,7 +61,7 @@ export default function RestaurantsPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by restaurant, cuisine, or neighborhood"
-                className="w-full bg-transparent text-sm text-[#28241f] outline-none placeholder:text-[#aaa196]"
+                className="w-full bg-transparent text-sm text-[#252126] outline-none placeholder:text-[#716a70]"
               />
             </label>
           </div>
@@ -77,7 +77,7 @@ export default function RestaurantsPage() {
                 type="button"
                 onClick={() => setCuisine(item)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  cuisine === item ? "bg-[#273b32] text-[#fffaf1]" : "border border-[#ded7cb] bg-[#fffdf9] text-[#81786c]"
+                  cuisine === item ? "bg-[#8b1e3f] text-white" : "border border-[#eae3e5] bg-white text-[#716a70]"
                 }`}
               >
                 {item === "all" ? "All cuisines" : item}
@@ -85,21 +85,21 @@ export default function RestaurantsPage() {
             ))}
           </div>
 
-          <label className="inline-flex items-center gap-2 rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#4e493f]">
+          <label className="inline-flex items-center gap-2 rounded-full border border-[#eae3e5] bg-white px-4 py-2 text-sm font-medium text-[#252126]">
             <input type="checkbox" checked={vegOnly} onChange={(event) => setVegOnly(event.target.checked)} />
             Veg only
           </label>
         </div>
 
-        {error ? <p className="rounded-2xl border border-[#f2d4d4] bg-[#fff6f5] p-4 text-sm text-[#8b1f1f]">Could not load restaurants right now.</p> : null}
+        {error ? <p className="rounded-xl border border-[#f2cccc] bg-[#fff6f5] p-4 text-sm text-[#c93636]">Could not load restaurants right now.</p> : null}
 
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="animate-pulse rounded-[1.5rem] border border-[#efe7dc] bg-[#fffdf9] p-4">
-                <div className="h-56 rounded-[1.25rem] bg-[#efe7dc]" />
-                <div className="mt-4 h-5 w-2/3 rounded bg-[#efe7dc]" />
-                <div className="mt-3 h-4 w-full rounded bg-[#f5efe7]" />
+              <div key={index} className="animate-pulse rounded-2xl border border-[#eae3e5] bg-white p-4">
+                <div className="h-56 rounded-xl bg-[#f7f4f5]" />
+                <div className="mt-4 h-5 w-2/3 rounded bg-[#f7f4f5]" />
+                <div className="mt-3 h-4 w-full rounded bg-[#f7f4f5]" />
               </div>
             ))}
           </div>
@@ -110,9 +110,9 @@ export default function RestaurantsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[1.75rem] border border-dashed border-[#d9cdb9] bg-[#fffdf9] p-12 text-center">
-            <h3 className="font-serif text-3xl tracking-[-0.04em] text-[#28241f]">No restaurants match your filters.</h3>
-            <p className="mt-3 text-[#665d55]">Try another cuisine or search phrase to find a new favorite.</p>
+          <div className="rounded-2xl border border-dashed border-[#d6c9cd] bg-white p-12 text-center">
+            <h3 className="font-serif text-3xl tracking-[-0.04em] text-[#252126]">No restaurants match your filters.</h3>
+            <p className="mt-3 text-[#716a70]">Try another cuisine or search phrase to find a new favorite.</p>
           </div>
         )}
       </section>
