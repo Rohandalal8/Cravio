@@ -8,11 +8,17 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-[#eae3e5] bg-white shadow-[0_8px_24px_rgba(37,33,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(37,33,38,0.12)]">
       <div className="relative h-56 overflow-hidden">
-        <img
-          src={restaurant.image}
-          alt={restaurant.name}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
+        {restaurant.image ? (
+          <img
+            src={restaurant.image}
+            alt={restaurant.name}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[#f7e9ed] text-2xl font-bold text-[#8b1e3f]" aria-hidden="true">
+            {restaurant.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
         {restaurant.offer ? (
           <span className="absolute left-4 top-4 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#8b1e3f]">
             {restaurant.offer}

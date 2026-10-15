@@ -88,7 +88,13 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
         <div className="mx-auto max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] shadow-[0_18px_60px_rgba(40,36,31,0.08)]">
           <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
             <div className="relative min-h-[360px] overflow-hidden">
-              <img src={restaurant.image} alt={restaurant.name} className="h-full w-full object-cover" />
+              {restaurant.image ? (
+                <img src={restaurant.image} alt={restaurant.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full min-h-[360px] items-center justify-center bg-[#f7e9ed] text-5xl font-bold text-[#8b1e3f]" aria-hidden="true">
+                  {restaurant.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-r from-[#1d2d26]/65 via-[#1d2d26]/20 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-8 text-[#fffaf1]">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#f8c76d]">{restaurant.cuisine}</p>

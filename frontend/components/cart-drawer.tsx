@@ -48,7 +48,13 @@ export function CartDrawer() {
             <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
               {items.map((item) => (
                 <article key={item.id} className="flex gap-3 border-b border-[#eae3e5] pb-4">
-                  <img src={item.image} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                  {item.image ? (
+                    <img src={item.image} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[#f7e9ed] text-xs font-bold text-[#8b1e3f]" aria-hidden="true">
+                      LB
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold uppercase tracking-[0.12em] text-[#e85d4a]">{item.restaurantName}</p>
                     <h3 className="mt-1 truncate text-sm font-bold text-[#252126]">{item.name}</h3>

@@ -44,7 +44,13 @@ function CartPageContent() {
           <div className="space-y-5">
             {items.map((item) => (
               <article key={item.id} className="flex gap-4 rounded-2xl border border-[#eae3e5] bg-white p-4 shadow-[0_10px_30px_rgba(37,33,38,0.05)]">
-                <img src={item.image} alt={item.name} className="h-24 w-24 rounded-[1rem] object-cover" />
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="h-24 w-24 rounded-[1rem] object-cover" />
+                ) : (
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[1rem] bg-[#f7e9ed] text-sm font-bold text-[#8b1e3f]" aria-hidden="true">
+                    LB
+                  </div>
+                )}
 
                 <div className="flex flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
