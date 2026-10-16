@@ -160,33 +160,50 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
           {visibleMenuItems.length > 0 ? (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {visibleMenuItems.map((item) => (
-              <article key={item.id} className="rounded-[1.5rem] border border-[#e7dfd2] bg-[#fffdf9] p-5 shadow-[0_10px_30px_rgba(40,36,31,0.04)]">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-serif text-2xl tracking-[-0.04em] text-[#28241f]">{item.name}</h3>
-                    <p className="mt-3 text-sm leading-6 text-[#70675f]">{item.description}</p>
-                  </div>
-                  <span className="whitespace-nowrap text-sm font-bold text-[#273b32]">₹{item.price}</span>
-                </div>
+                <article key={item.id} className="rounded-[1.5rem] border border-[#e7dfd2] bg-[#fffdf9] p-5 shadow-[0_10px_30px_rgba(40,36,31,0.04)]">
+                  <div className="flex items-start gap-4">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-24 w-24 shrink-0 rounded-[1rem] object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[1rem] bg-[#f7e9ed] text-2xl font-bold text-[#8b1e3f]"
+                        aria-hidden="true"
+                      >
+                        {item.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    addItem({
-                      id: item.id,
-                      name: item.name,
-                      restaurantId: restaurant.id,
-                      restaurantName: restaurant.name,
-                      slug: restaurant.slug,
-                      image: restaurant.image,
-                      price: item.price,
-                    })
-                  }
-                  className="mt-6 inline-flex rounded-full bg-[#273b32] px-4 py-2 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1b2823]"
-                >
-                  Add to cart
-                </button>
-              </article>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-serif text-2xl tracking-[-0.04em] text-[#28241f]">{item.name}</h3>
+                        <span className="whitespace-nowrap text-sm font-bold text-[#273b32]">₹{item.price}</span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-[#70675f]">{item.description}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      addItem({
+                        id: item.id,
+                        name: item.name,
+                        restaurantId: restaurant.id,
+                        restaurantName: restaurant.name,
+                        slug: restaurant.slug,
+                        image: item.image,
+                        price: item.price,
+                      })
+                    }
+                    className="mt-6 inline-flex rounded-full bg-[#273b32] px-4 py-2 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1b2823]"
+                  >
+                    Add to cart
+                  </button>
+                </article>
               ))}
             </div>
           ) : (

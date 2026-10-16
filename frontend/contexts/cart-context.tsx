@@ -8,7 +8,7 @@ export type CartItem = {
   restaurantId: string;
   restaurantName: string;
   slug: string;
-  image: string;
+  image: string | null;
   price: number;
   quantity: number;
 };
@@ -67,7 +67,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (existingItem) {
         return currentItems.map((entry) =>
           entry.id === item.id
-            ? { ...entry, quantity: entry.quantity + (item.quantity ?? 1) }
+            ? {
+                ...entry,
+                image: item.image,
+                quantity: entry.quantity + (item.quantity ?? 1),
+              }
             : entry,
         );
       }
