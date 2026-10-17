@@ -42,7 +42,9 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
 
   const price = useMemo(() => (restaurant ? "$".repeat(Math.max(1, restaurant.priceLevel)) : ""), [restaurant]);
   const visibleMenuItems = useMemo(() => {
-    const items = restaurant?.categories.flatMap((category) => category.items) ?? [];
+    const items = restaurant?.categories.flatMap((category) =>
+      category.items.map((item) => ({ ...item, categoryName: category.name })),
+    ) ?? [];
     const filteredItems = vegOnly ? items.filter((item) => item.isVeg) : [...items];
 
     if (priceSort === "low-to-high") {
@@ -136,15 +138,29 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
 
       <section className="px-5 pb-14 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1200px]">
-          <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Popular dishes</p>
-              <h2 className="mt-2 font-serif text-4xl tracking-[-0.04em] text-[#28241f]">Menu favourites</h2>
+          <div className="mb-7 rounded-[1.75rem] border border-[#eadfcf] bg-[#fffaf1] p-6 sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">The full menu</p>
+                <h2 className="mt-2 font-serif text-4xl tracking-[-0.04em] text-[#28241f] sm:text-5xl">Made to be savoured</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-[#70675f]">
+                  Explore every dish from {restaurant.name}, prepared with care and delivered to your door.
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 text-sm text-[#70675f]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f7e9ed] font-bold text-[#8b1e3f]">{visibleMenuItems.length}</span>
+                <span>{visibleMenuItems.length === 1 ? "dish to explore" : "dishes to explore"}</span>
+              </div>
             </div>
+          </div>
+
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-[#5f574f]">Browse the menu</p>
             <div className="flex flex-wrap items-center gap-3">
               <label className="inline-flex items-center gap-2 rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#4e493f]">
                 <input type="checkbox" checked={vegOnly} onChange={(event) => setVegOnly(event.target.checked)} />
-                Veg only
+                <span className="h-2 w-2 rounded-full bg-[#198754]" />
+                Vegetarian
               </label>
               <label className="flex items-center gap-2 rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#4e493f]">
                 <span className="sr-only">Sort menu by price</span>
@@ -158,19 +174,19 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
           </div>
 
           {visibleMenuItems.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-4">
               {visibleMenuItems.map((item) => (
-                <article key={item.id} className="rounded-[1.5rem] border border-[#e7dfd2] bg-[#fffdf9] p-5 shadow-[0_10px_30px_rgba(40,36,31,0.04)]">
-                  <div className="flex items-start gap-4">
+                <article key={item.id} className="group rounded-[1.5rem] border border-[#e7dfd2] bg-[#fffdf9] p-4 shadow-[0_10px_30px_rgba(40,36,31,0.04)] transition duration-200 hover:-translate-y-0.5 hover:border-[#d8c4a8] hover:shadow-[0_16px_36px_rgba(40,36,31,0.09)] sm:p-5">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     {item.image ? (
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="h-24 w-24 shrink-0 rounded-[1rem] object-cover"
+                        className="h-48 w-full shrink-0 rounded-[1.15rem] object-cover sm:h-32 sm:w-40"
                       />
                     ) : (
                       <div
-                        className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[1rem] bg-[#f7e9ed] text-2xl font-bold text-[#8b1e3f]"
+                        className="flex h-48 w-full shrink-0 items-center justify-center rounded-[1.15rem] bg-[#f7e9ed] text-4xl font-bold text-[#8b1e3f] sm:h-32 sm:w-40"
                         aria-hidden="true"
                       >
                         {item.name.slice(0, 1).toUpperCase()}
@@ -178,31 +194,34 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
                     )}
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-serif text-2xl tracking-[-0.04em] text-[#28241f]">{item.name}</h3>
-                        <span className="whitespace-nowrap text-sm font-bold text-[#273b32]">₹{item.price}</span>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#d97732]">{item.categoryName}</p>
+                          <h3 className="mt-1 font-serif text-2xl tracking-[-0.04em] text-[#28241f]">{item.name}</h3>
+                        </div>
+                        <span className="whitespace-nowrap rounded-full bg-[#f7f3ed] px-3 py-1 text-sm font-bold text-[#273b32]">₹{item.price}</span>
                       </div>
                       <p className="mt-3 text-sm leading-6 text-[#70675f]">{item.description}</p>
                     </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      addItem({
-                        id: item.id,
-                        name: item.name,
-                        restaurantId: restaurant.id,
-                        restaurantName: restaurant.name,
-                        slug: restaurant.slug,
-                        image: item.image,
-                        price: item.price,
-                      })
-                    }
-                    className="mt-6 inline-flex rounded-full bg-[#273b32] px-4 py-2 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1b2823]"
-                  >
-                    Add to cart
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addItem({
+                          id: item.id,
+                          name: item.name,
+                          restaurantId: restaurant.id,
+                          restaurantName: restaurant.name,
+                          slug: restaurant.slug,
+                          image: item.image,
+                          price: item.price,
+                        })
+                      }
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#273b32] px-5 py-2.5 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1b2823] sm:min-w-32"
+                    >
+                      Add <span aria-hidden="true" className="text-base">+</span>
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
