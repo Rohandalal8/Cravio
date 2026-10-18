@@ -556,6 +556,7 @@ model CouponUsage {
 
   @@index([couponId])
   @@index([userId])
+  @@unique([couponId, userId])
 }
 
 model Notification {

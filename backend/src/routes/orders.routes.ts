@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import prisma from "../config/prisma.js";
 import { requireAuth, requireCustomer } from "../middleware/auth.js";
-import { createOrder } from "../services/order.service.js";
+import { createOrder, previewCoupon } from "../services/order.service.js";
 
 const router = Router();
 
@@ -48,13 +48,14 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
         }))
       : [];
     const address = typeof req.body?.address === "string" ? req.body.address.trim() : "";
+    const couponCode = typeof req.body?.couponCode === "string" ? req.body.couponCode : undefined;
 
     if (!address) {
       res.status(400).json({ success: false, message: "A delivery address is required.", code: "ADDRESS_REQUIRED" });
       return;
     }
 
-    const order = await createOrder({ userId: req.user!.id, items, address });
+    const order = await createOrder({ userId: req.user!.id, items, address, couponCode });
 
     res.status(201).json({
       success: true,
@@ -64,6 +65,7 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
         restaurantName: order.restaurant.name,
         items: order.items,
         subtotal: order.subtotal,
+        discount: order.discount,
         deliveryFee: order.deliveryFee,
         tax: order.tax,
         total: order.total,
@@ -72,6 +74,21 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
         createdAt: order.createdAt,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/orders/coupon/validate", requireAuth, requireCustomer, async (req, res, next) => {
+  try {
+    const code = typeof req.body?.code === "string" ? req.body.code : "";
+    const subtotal = Number(req.body?.subtotal);
+    if (!Number.isFinite(subtotal) || subtotal < 0) {
+      res.status(400).json({ success: false, message: "A valid order subtotal is required.", code: "INVALID_SUBTOTAL" });
+      return;
+    }
+    const result = await previewCoupon(req.user!.id, code, subtotal);
+    res.status(200).json({ success: true, data: { code: result.coupon.code, discount: result.discount, minimumOrder: result.coupon.minimumOrder } });
   } catch (error) {
     next(error);
   }

@@ -14,6 +14,37 @@ function CheckoutPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const discountedSubtotal = Math.max(0, subtotal - (appliedCoupon?.discount ?? 0));
+  const estimatedTax = Math.round(discountedSubtotal * 0.05 * 100) / 100;
+  const estimatedTotal = discountedSubtotal + deliveryFee + estimatedTax;
+
+  const handleApplyCoupon = async () => {
+    if (!firebaseUser || !couponCode.trim()) {
+      setError("Enter a coupon code.");
+      return;
+    }
+    setIsApplyingCoupon(true);
+    setError(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/coupon/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `****** firebaseUser.getIdToken()}` },
+        body: JSON.stringify({ code: couponCode, subtotal }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) throw new Error(payload?.message ?? "Unable to apply coupon.");
+      setAppliedCoupon(payload.data);
+      setCouponCode(payload.data.code);
+    } catch (applyError) {
+      setAppliedCoupon(null);
+      setError(applyError instanceof Error ? applyError.message : "Unable to apply coupon.");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
 
   if (!items.length && !orderNumber) {
     return (
@@ -49,6 +80,7 @@ function CheckoutPageContent() {
         body: JSON.stringify({
           items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
           address,
+          couponCode: appliedCoupon?.code,
         }),
       });
 
@@ -116,11 +148,24 @@ function CheckoutPageContent() {
 
           <div className="mt-5 space-y-3 border-t border-[#efe7dc] pt-4 text-sm text-[#5b554e]">
             <div className="flex items-center justify-between"><span>Subtotal</span><span>₹{subtotal}</span></div>
+            <div className="flex items-center justify-between">
+              <span>Coupon discount</span>
+              <span className="text-[#23804d]">-₹{appliedCoupon?.discount ?? 0}</span>
+            </div>
             <div className="flex items-center justify-between"><span>Delivery fee</span><span>₹{deliveryFee}</span></div>
             <div className="flex items-center justify-between text-base font-bold text-[#273b32]">
               <span>Total</span>
-              <span>₹{total}</span>
+              <span>₹{appliedCoupon ? estimatedTotal : total}</span>
             </div>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <input value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase())} placeholder="Coupon code" className="min-w-0 flex-1 rounded-full border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm uppercase outline-none focus:border-[#d97732]" disabled={Boolean(appliedCoupon)} />
+            {appliedCoupon ? (
+              <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} className="rounded-full border border-[#ded7cb] px-4 py-3 text-sm font-semibold">Remove</button>
+            ) : (
+              <button type="button" onClick={() => void handleApplyCoupon()} disabled={isApplyingCoupon} className="rounded-full border border-[#8b1e3f] px-4 py-3 text-sm font-semibold text-[#8b1e3f] disabled:opacity-60">{isApplyingCoupon ? "Applying..." : "Apply"}</button>
+            )}
           </div>
 
           {error ? <p className="mt-4 rounded-xl border border-[#f2d4d4] bg-[#fff6f5] p-3 text-sm text-[#8b1f1f]">{error}</p> : null}

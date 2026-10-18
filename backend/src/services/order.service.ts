@@ -11,7 +11,31 @@ type CreateOrderInput = {
   userId: string;
   items: CheckoutItem[];
   address: string;
+  couponCode?: string;
 };
+
+function couponError(message: string, code: string) {
+  return Object.assign(new Error(message), { statusCode: 400, code });
+}
+
+async function findUsableCoupon(transaction: Prisma.TransactionClient, userId: string, code: string, subtotal: number) {
+  const coupon = await transaction.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
+  if (!coupon || !coupon.isActive) throw couponError("This coupon is invalid or inactive.", "INVALID_COUPON");
+  if (coupon.expiresAt && coupon.expiresAt <= new Date()) throw couponError("This coupon has expired.", "COUPON_EXPIRED");
+  if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) throw couponError("This coupon has reached its usage limit.", "COUPON_LIMIT_REACHED");
+  if (subtotal < coupon.minimumOrder) throw couponError(`This coupon requires a minimum order of ₹${coupon.minimumOrder}.`, "MINIMUM_ORDER_NOT_MET");
+  if (await transaction.couponUsage.findFirst({ where: { couponId: coupon.id, userId } })) {
+    throw couponError("You have already used this coupon.", "COUPON_ALREADY_USED");
+  }
+  const rawDiscount = coupon.discountType === "PERCENTAGE" ? subtotal * coupon.discountValue / 100 : coupon.discountValue;
+  const discount = Math.min(subtotal, coupon.maximumDiscount === null ? rawDiscount : Math.min(rawDiscount, coupon.maximumDiscount));
+  return { coupon, discount: Math.round(discount * 100) / 100 };
+}
+
+export async function previewCoupon(userId: string, code: string, subtotal: number) {
+  if (!code.trim()) throw couponError("Enter a coupon code.", "COUPON_REQUIRED");
+  return findUsableCoupon(prisma, userId, code, subtotal);
+}
 
 export async function createOrder(input: CreateOrderInput) {
   if (!input.items.length) {
@@ -50,10 +74,13 @@ export async function createOrder(input: CreateOrderInput) {
     return sum + unitPrice * (quantities.get(item.id) ?? 0);
   }, 0);
   const deliveryFee = 49;
-  const tax = Math.round(subtotal * 0.05 * 100) / 100;
-  const total = subtotal + deliveryFee + tax;
+  const couponCode = typeof input.couponCode === "string" ? input.couponCode.trim() : "";
 
   return prisma.$transaction(async (transaction) => {
+    const appliedCoupon = couponCode ? await findUsableCoupon(transaction, input.userId, couponCode, subtotal) : null;
+    const discount = appliedCoupon?.discount ?? 0;
+    const tax = Math.round((subtotal - discount) * 0.05 * 100) / 100;
+    const total = Math.max(0, subtotal - discount + deliveryFee + tax);
     const address = await transaction.address.create({
       data: {
         userId: input.userId,
@@ -65,12 +92,13 @@ export async function createOrder(input: CreateOrderInput) {
       },
     });
 
-    return transaction.order.create({
+    const order = await transaction.order.create({
       data: {
         userId: input.userId,
         restaurantId: restaurant.id,
         addressId: address.id,
         subtotal,
+        discount,
         deliveryFee,
         tax,
         total,
@@ -91,5 +119,18 @@ export async function createOrder(input: CreateOrderInput) {
       },
       include: { restaurant: true, items: true, address: true },
     });
+    if (appliedCoupon) {
+      const updated = await transaction.coupon.updateMany({
+        where: {
+          id: appliedCoupon.coupon.id,
+          isActive: true,
+          ...(appliedCoupon.coupon.usageLimit === null ? {} : { usedCount: { lt: appliedCoupon.coupon.usageLimit } }),
+        },
+        data: { usedCount: { increment: 1 } },
+      });
+      if (updated.count !== 1) throw couponError("This coupon is no longer available.", "COUPON_LIMIT_REACHED");
+      await transaction.couponUsage.create({ data: { couponId: appliedCoupon.coupon.id, userId: input.userId, orderId: order.id } });
+    }
+    return order;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

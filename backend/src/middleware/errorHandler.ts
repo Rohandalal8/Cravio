@@ -24,7 +24,7 @@ export function errorHandler(
 
   res.status(statusCode).json({
     success: false,
-    message: process.env.NODE_ENV === "production" ? "Something went wrong" : error.message,
+    message: statusCode < 500 || process.env.NODE_ENV !== "production" ? error.message : "Something went wrong",
     code,
   });
 }

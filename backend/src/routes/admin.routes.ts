@@ -306,8 +306,17 @@ router.get("/coupons", requireAuth, requireAdmin, async (_req, res, next) => {
 router.post("/coupons", requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const { code, discountType, discountValue, minimumOrder, maximumDiscount, usageLimit, expiresAt } = req.body ?? {};
-    if (typeof code !== "string" || !Object.values(CouponDiscountType).includes(discountType) || !Number.isFinite(Number(discountValue))) return res.status(400).json({ success: false, message: "Coupon code, type, and discount are required.", code: "INVALID_COUPON" });
-    const coupon = await prisma.coupon.create({ data: { code: code.trim().toUpperCase(), discountType, discountValue: Number(discountValue), minimumOrder: Number(minimumOrder) || 0, maximumDiscount: maximumDiscount == null ? null : Number(maximumDiscount), usageLimit: usageLimit == null ? null : Number(usageLimit), expiresAt: expiresAt ? new Date(expiresAt) : null } });
+    const normalizedCode = typeof code === "string" ? code.trim().toUpperCase() : "";
+    const value = Number(discountValue);
+    const minimum = Number(minimumOrder ?? 0);
+    const maximum = maximumDiscount == null || maximumDiscount === "" ? null : Number(maximumDiscount);
+    const limit = usageLimit == null || usageLimit === "" ? null : Number(usageLimit);
+    const expiry = expiresAt ? new Date(expiresAt) : null;
+    if (!/^[A-Z0-9_-]{3,30}$/.test(normalizedCode) || !Object.values(CouponDiscountType).includes(discountType) || !Number.isFinite(value) || value <= 0 || (discountType === CouponDiscountType.PERCENTAGE && value > 100) || !Number.isFinite(minimum) || minimum < 0 || (maximum !== null && (!Number.isFinite(maximum) || maximum <= 0)) || (limit !== null && (!Number.isInteger(limit) || limit < 1)) || (expiry && Number.isNaN(expiry.getTime()))) {
+      return res.status(400).json({ success: false, message: "Enter valid coupon details.", code: "INVALID_COUPON" });
+    }
+    if (await prisma.coupon.findUnique({ where: { code: normalizedCode } })) return res.status(409).json({ success: false, message: "A coupon with this code already exists.", code: "COUPON_EXISTS" });
+    const coupon = await prisma.coupon.create({ data: { code: normalizedCode, discountType, discountValue: value, minimumOrder: minimum, maximumDiscount: maximum, usageLimit: limit, expiresAt: expiry } });
     return res.status(201).json({ success: true, data: coupon });
   } catch (error) { return next(error); }
 });
