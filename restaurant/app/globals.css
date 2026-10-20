@@ -32,6 +32,8 @@ body{line-height:1.5}
 .form label{color:var(--text-secondary)}
 .form input,.form textarea,.form select{border-color:var(--border-default);border-radius:var(--radius-sm);min-height:44px;padding:11px 12px;transition:border-color var(--transition-default),box-shadow var(--transition-default)}
 .form textarea{min-height:110px;resize:vertical}
+.settings-layout{display:grid;gap:20px;max-width:950px}.status-card{display:flex;align-items:center;gap:20px;justify-content:space-between}.status-card>div:first-child{flex:1}.status-card .button{flex-shrink:0}.status.is-closed i{background:#c93636}.settings-help{color:var(--text-secondary);font-size:13px;margin:5px 0 0}.settings-card{padding:0;overflow:hidden}.settings-card .table-head{margin-bottom:0}.settings-form{padding:24px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.settings-form>.button{justify-self:start}@media(max-width:650px){.status-card{align-items:flex-start;flex-direction:column}.status-card .button{width:100%}.form-grid{grid-template-columns:1fr}}
+.settings-image-preview{width:100%;max-height:260px;border-radius:12px;object-fit:cover;border:1px solid var(--border-default)}.settings-form label small{color:var(--text-secondary);font-weight:400}
 .form input:focus,.form textarea:focus,.form select:focus{border-color:var(--brand-primary);box-shadow:0 0 0 3px rgb(139 30 63/.14);outline:none}
 .error{background:#fff4f3;border-color:#f2cccc;color:var(--status-error)}
 .success,.saved{background:#edf8f0;border:1px solid #b9dfc2;border-radius:10px;color:var(--status-success);font-size:13px;padding:13px 16px}

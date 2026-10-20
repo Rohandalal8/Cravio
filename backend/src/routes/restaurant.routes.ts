@@ -39,7 +39,7 @@ router.patch("/profile", requireAuth, requireRestaurantOwner, async (req, res, n
       res.status(404).json({ success: false, message: "No restaurant is linked to this owner.", code: "RESTAURANT_NOT_FOUND" });
       return;
     }
-    const allowed = ["name", "description", "phone", "email", "address", "city", "state", "pincode", "deliveryTime", "minimumOrder", "isOpen"] as const;
+    const allowed = ["name", "description", "phone", "email", "address", "city", "state", "pincode", "deliveryTime", "minimumOrder", "isOpen", "coverImage"] as const;
     const data = Object.fromEntries(allowed.filter((key) => req.body?.[key] !== undefined).map((key) => [key, req.body[key]]));
     const updated = await prisma.restaurant.update({ where: { id: restaurant.id }, data });
     res.status(200).json({ success: true, data: updated });

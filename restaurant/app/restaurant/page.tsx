@@ -1,5 +1,5 @@
-import { OwnerPage } from "@/components/owner-page";
+import { redirect } from "next/navigation";
 
 export default function RestaurantPage() {
-  return <OwnerPage kind="restaurant" />;
+  redirect("/settings");
 }

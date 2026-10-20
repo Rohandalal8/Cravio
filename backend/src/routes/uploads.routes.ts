@@ -10,7 +10,7 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 const signatureSchema = z.object({
-  uploadType: z.enum(["application", "menu"]),
+  uploadType: z.enum(["application", "menu", "restaurant"]),
   applicationType: z.enum(["owner", "rider"]).optional(),
   documentType: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(60),
 }).superRefine((value, context) => {
@@ -40,7 +40,9 @@ router.post("/signature", requireAuth, (req, res) => {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = parsed.data.uploadType === "menu"
     ? `restaurants/${req.user!.id}/menu`
-    : `applications/${req.user!.id}/${parsed.data.applicationType}`;
+    : parsed.data.uploadType === "restaurant"
+      ? `restaurants/${req.user!.id}/profile`
+      : `applications/${req.user!.id}/${parsed.data.applicationType}`;
   const publicId = `${parsed.data.documentType}-${timestamp}-${randomUUID()}`;
   const signature = cloudinary.utils.api_sign_request(
     { folder, public_id: publicId, timestamp },
