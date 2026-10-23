@@ -30,16 +30,37 @@ router.get("/me", requireAuth, async (req, res, next) => {
 router.get("/admin/me", requireAuth, async (req, res, next) => {
   try {
     if (req.user!.role !== "ADMIN") {
-      return res.status(403).json({ success: false, message: "An administrator account is required.", code: "ADMIN_REQUIRED" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "An administrator account is required.",
+          code: "ADMIN_REQUIRED",
+        });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, name: true, email: true, phone: true, avatar: true, role: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatar: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "Admin profile not found.", code: "USER_NOT_FOUND" });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Admin profile not found.",
+          code: "USER_NOT_FOUND",
+        });
     }
 
     return res.status(200).json({ success: true, data: user });
@@ -74,9 +95,10 @@ router.post("/sync", async (req, res, next) => {
     const existingByFirebaseUid = await prisma.user.findUnique({
       where: { firebaseUid: decodedToken.uid },
     });
-    const existingByEmail = !existingByFirebaseUid && userPayload.email
-      ? await prisma.user.findUnique({ where: { email: userPayload.email } })
-      : null;
+    const existingByEmail =
+      !existingByFirebaseUid && userPayload.email
+        ? await prisma.user.findUnique({ where: { email: userPayload.email } })
+        : null;
     const existingUser = existingByFirebaseUid ?? existingByEmail;
 
     const user = existingUser

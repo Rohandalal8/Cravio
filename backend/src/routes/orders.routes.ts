@@ -20,24 +20,41 @@ router.get("/orders", requireAuth, requireCustomer, async (req, res, next) => {
   }
 });
 
-router.get("/orders/:id", requireAuth, requireCustomer, async (req, res, next) => {
-  try {
-    const orderId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
-    const order = await prisma.order.findFirst({
-      where: { id: orderId, userId: req.user!.id },
-      include: { restaurant: true, items: true, address: true, payment: true },
-    });
+router.get(
+  "/orders/:id",
+  requireAuth,
+  requireCustomer,
+  async (req, res, next) => {
+    try {
+      const orderId =
+        typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+      const order = await prisma.order.findFirst({
+        where: { id: orderId, userId: req.user!.id },
+        include: {
+          restaurant: true,
+          items: true,
+          address: true,
+          payment: true,
+        },
+      });
 
-    if (!order) {
-      res.status(404).json({ success: false, message: "Order not found.", code: "ORDER_NOT_FOUND" });
-      return;
+      if (!order) {
+        res
+          .status(404)
+          .json({
+            success: false,
+            message: "Order not found.",
+            code: "ORDER_NOT_FOUND",
+          });
+        return;
+      }
+
+      res.status(200).json({ success: true, data: order });
+    } catch (error) {
+      next(error);
     }
-
-    res.status(200).json({ success: true, data: order });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
   try {
@@ -47,15 +64,30 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
           quantity: Number(item.quantity),
         }))
       : [];
-    const address = typeof req.body?.address === "string" ? req.body.address.trim() : "";
-    const couponCode = typeof req.body?.couponCode === "string" ? req.body.couponCode : undefined;
+    const address =
+      typeof req.body?.address === "string" ? req.body.address.trim() : "";
+    const couponCode =
+      typeof req.body?.couponCode === "string"
+        ? req.body.couponCode
+        : undefined;
 
     if (!address) {
-      res.status(400).json({ success: false, message: "A delivery address is required.", code: "ADDRESS_REQUIRED" });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "A delivery address is required.",
+          code: "ADDRESS_REQUIRED",
+        });
       return;
     }
 
-    const order = await createOrder({ userId: req.user!.id, items, address, couponCode });
+    const order = await createOrder({
+      userId: req.user!.id,
+      items,
+      address,
+      couponCode,
+    });
 
     res.status(201).json({
       success: true,
@@ -79,19 +111,39 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
   }
 });
 
-router.post("/orders/coupon/validate", requireAuth, requireCustomer, async (req, res, next) => {
-  try {
-    const code = typeof req.body?.code === "string" ? req.body.code : "";
-    const subtotal = Number(req.body?.subtotal);
-    if (!Number.isFinite(subtotal) || subtotal < 0) {
-      res.status(400).json({ success: false, message: "A valid order subtotal is required.", code: "INVALID_SUBTOTAL" });
-      return;
+router.post(
+  "/orders/coupon/validate",
+  requireAuth,
+  requireCustomer,
+  async (req, res, next) => {
+    try {
+      const code = typeof req.body?.code === "string" ? req.body.code : "";
+      const subtotal = Number(req.body?.subtotal);
+      if (!Number.isFinite(subtotal) || subtotal < 0) {
+        res
+          .status(400)
+          .json({
+            success: false,
+            message: "A valid order subtotal is required.",
+            code: "INVALID_SUBTOTAL",
+          });
+        return;
+      }
+      const result = await previewCoupon(req.user!.id, code, subtotal);
+      res
+        .status(200)
+        .json({
+          success: true,
+          data: {
+            code: result.coupon.code,
+            discount: result.discount,
+            minimumOrder: result.coupon.minimumOrder,
+          },
+        });
+    } catch (error) {
+      next(error);
     }
-    const result = await previewCoupon(req.user!.id, code, subtotal);
-    res.status(200).json({ success: true, data: { code: result.coupon.code, discount: result.discount, minimumOrder: result.coupon.minimumOrder } });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 export default router;

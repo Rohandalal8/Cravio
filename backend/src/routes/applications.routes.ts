@@ -49,7 +49,8 @@ const riderSchema = z.object({
   profileImage: z.string().url().max(2000).optional().nullable(),
 });
 
-const oppositePartnerRoleFor = (kind: "owner" | "rider") => kind === "owner" ? UserRole.RIDER : UserRole.RESTAURANT_OWNER;
+const oppositePartnerRoleFor = (kind: "owner" | "rider") =>
+  kind === "owner" ? UserRole.RIDER : UserRole.RESTAURANT_OWNER;
 
 async function hasRole(userId: string, role: UserRole) {
   const user = await prisma.user.findUnique({
@@ -59,11 +60,18 @@ async function hasRole(userId: string, role: UserRole) {
   return user?.role === role;
 }
 
-async function rejectIfOppositePartner(req: Parameters<typeof requireAuth>[0], res: Parameters<typeof requireAuth>[1], kind: "owner" | "rider") {
+async function rejectIfOppositePartner(
+  req: Parameters<typeof requireAuth>[0],
+  res: Parameters<typeof requireAuth>[1],
+  kind: "owner" | "rider",
+) {
   if (await hasRole(req.user!.id, oppositePartnerRoleFor(kind))) {
     res.status(409).json({
       success: false,
-      message: kind === "owner" ? "Riders cannot apply to become restaurant owners." : "Restaurant owners cannot apply to become riders.",
+      message:
+        kind === "owner"
+          ? "Riders cannot apply to become restaurant owners."
+          : "Restaurant owners cannot apply to become riders.",
       code: "PARTNER_ROLE_CONFLICT",
     });
     return true;
@@ -72,11 +80,16 @@ async function rejectIfOppositePartner(req: Parameters<typeof requireAuth>[0], r
 }
 
 function validationError(error: z.ZodError) {
-  return error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ");
+  return error.issues
+    .map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`)
+    .join("; ");
 }
 
 async function notifyAdmins(title: string, message: string) {
-  const admins = await prisma.user.findMany({ where: { role: UserRole.ADMIN, status: "ACTIVE" }, select: { id: true } });
+  const admins = await prisma.user.findMany({
+    where: { role: UserRole.ADMIN, status: "ACTIVE" },
+    select: { id: true },
+  });
   if (admins.length > 0) {
     await prisma.notification.createMany({
       data: admins.map((admin) => ({ userId: admin.id, title, message })),
@@ -87,9 +100,32 @@ async function notifyAdmins(title: string, message: string) {
 router.get("/status", requireAuth, async (req, res, next) => {
   try {
     const [user, ownerApplication, riderApplication] = await Promise.all([
-      prisma.user.findUnique({ where: { id: req.user!.id }, select: { role: true } }),
-      prisma.restaurantApplication.findFirst({ where: { applicantId: req.user!.id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, rejectionReason: true, reviewedAt: true, createdAt: true } }),
-      prisma.riderApplication.findFirst({ where: { applicantId: req.user!.id }, orderBy: { createdAt: "desc" }, select: { id: true, status: true, rejectionReason: true, reviewedAt: true, createdAt: true } }),
+      prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { role: true },
+      }),
+      prisma.restaurantApplication.findFirst({
+        where: { applicantId: req.user!.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          rejectionReason: true,
+          reviewedAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.riderApplication.findFirst({
+        where: { applicantId: req.user!.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          rejectionReason: true,
+          reviewedAt: true,
+          createdAt: true,
+        },
+      }),
     ]);
     return res.json({
       success: true,
@@ -109,12 +145,32 @@ router.post("/owner", requireAuth, async (req, res, next) => {
   try {
     if (await rejectIfOppositePartner(req, res, "owner")) return;
     const parsed = ownerSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(422).json({ success: false, message: validationError(parsed.error), code: "VALIDATION_ERROR" });
+    if (!parsed.success)
+      return res
+        .status(422)
+        .json({
+          success: false,
+          message: validationError(parsed.error),
+          code: "VALIDATION_ERROR",
+        });
 
     const existing = await prisma.restaurantApplication.findFirst({
-      where: { applicantId: req.user!.id, status: { in: [ApplicationStatus.PENDING, ApplicationStatus.APPROVED] } },
+      where: {
+        applicantId: req.user!.id,
+        status: { in: [ApplicationStatus.PENDING, ApplicationStatus.APPROVED] },
+      },
     });
-    if (existing) return res.status(409).json({ success: false, message: existing.status === "APPROVED" ? "Your restaurant owner application is already approved." : "You already have an application under review.", code: "APPLICATION_EXISTS" });
+    if (existing)
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message:
+            existing.status === "APPROVED"
+              ? "Your restaurant owner application is already approved."
+              : "You already have an application under review.",
+          code: "APPLICATION_EXISTS",
+        });
 
     const application = await prisma.restaurantApplication.create({
       data: {
@@ -123,7 +179,10 @@ router.post("/owner", requireAuth, async (req, res, next) => {
         businessDocuments: parsed.data.businessDocuments ?? undefined,
       },
     });
-    await notifyAdmins("New Restaurant Owner Application", `${application.name} submitted a restaurant owner application.`);
+    await notifyAdmins(
+      "New Restaurant Owner Application",
+      `${application.name} submitted a restaurant owner application.`,
+    );
     return res.status(201).json({ success: true, data: application });
   } catch (error) {
     return next(error);
@@ -134,15 +193,40 @@ router.post("/rider", requireAuth, async (req, res, next) => {
   try {
     if (await rejectIfOppositePartner(req, res, "rider")) return;
     const parsed = riderSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(422).json({ success: false, message: validationError(parsed.error), code: "VALIDATION_ERROR" });
+    if (!parsed.success)
+      return res
+        .status(422)
+        .json({
+          success: false,
+          message: validationError(parsed.error),
+          code: "VALIDATION_ERROR",
+        });
 
     const existing = await prisma.riderApplication.findFirst({
-      where: { applicantId: req.user!.id, status: { in: [ApplicationStatus.PENDING, ApplicationStatus.APPROVED] } },
+      where: {
+        applicantId: req.user!.id,
+        status: { in: [ApplicationStatus.PENDING, ApplicationStatus.APPROVED] },
+      },
     });
-    if (existing) return res.status(409).json({ success: false, message: existing.status === "APPROVED" ? "Your rider application is already approved." : "You already have an application under review.", code: "APPLICATION_EXISTS" });
+    if (existing)
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message:
+            existing.status === "APPROVED"
+              ? "Your rider application is already approved."
+              : "You already have an application under review.",
+          code: "APPLICATION_EXISTS",
+        });
 
-    const application = await prisma.riderApplication.create({ data: { ...parsed.data, applicantId: req.user!.id } });
-    await notifyAdmins("New Rider Application", `${parsed.data.fullName ?? "A user"} submitted a rider application.`);
+    const application = await prisma.riderApplication.create({
+      data: { ...parsed.data, applicantId: req.user!.id },
+    });
+    await notifyAdmins(
+      "New Rider Application",
+      `${parsed.data.fullName ?? "A user"} submitted a rider application.`,
+    );
     return res.status(201).json({ success: true, data: application });
   } catch (error) {
     return next(error);
