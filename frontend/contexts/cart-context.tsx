@@ -32,7 +32,7 @@ type CartContextValue = {
   clearCart: () => void;
 };
 
-const CART_STORAGE_KEY = "luxe-bites-cart";
+const CART_STORAGE_KEY = "cravio-cart";
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {

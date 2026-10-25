@@ -12,7 +12,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = auth?.currentUser
     ? await auth.currentUser.getIdToken()
-    : window.localStorage.getItem("luxebites-token");
+    : window.localStorage.getItem("cravio-token");
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },

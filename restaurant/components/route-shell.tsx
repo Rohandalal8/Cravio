@@ -19,7 +19,7 @@ export function RouteShell({ children }: Readonly<{ children: React.ReactNode }>
   return (
     <div className="shell">
       <aside className="side">
-        <Link className="brand" href="/"><span aria-hidden="true">✦</span><span>Luxebites</span></Link>
+        <Link className="brand" href="/"><span aria-hidden="true">✦</span><span>Cravio</span></Link>
         <nav aria-label="Restaurant workspace">
           {links.map(([href, label]) => <Link className={pathname === href || (href !== "/" && pathname.startsWith(href)) ? "active" : ""} href={href} key={href}>{label}</Link>)}
         </nav>

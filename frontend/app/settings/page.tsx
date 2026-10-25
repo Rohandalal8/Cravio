@@ -50,7 +50,7 @@ function PartnerCard({
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#dcecdf] text-[#273b32]"><Icon size={24} /></div>
         <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-[#d97732]">Partner portal</p>
         <h2 className="mt-2 font-serif text-3xl tracking-[-0.03em] text-[#28241f]">{title}</h2>
-        <p className="mt-3 leading-7 text-[#6f675d]">Your application has been approved. Open your live Luxebites workspace.</p>
+        <p className="mt-3 leading-7 text-[#6f675d]">Your application has been approved. Open your live Cravio workspace.</p>
         <a href={portalUrl} className="mt-6 inline-flex items-center rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-[#fffaf1] transition hover:bg-[#1c2d25]">Open portal <ArrowUpRight size={17} className="ml-2" /></a>
       </section>
     );
@@ -101,10 +101,10 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-[1200px]">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#d97732]">Your account</p>
         <h1 className="mt-3 font-serif text-5xl tracking-[-0.04em]">Settings</h1>
-        <p className="mt-4 max-w-2xl leading-7 text-[#6f675d]">Manage your Luxebites profile and choose how you would like to partner with us.</p>
+        <p className="mt-4 max-w-2xl leading-7 text-[#6f675d]">Manage your Cravio profile and choose how you would like to partner with us.</p>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          {!isRider ? <PartnerCard kind="restaurant" title="Restaurant Partner" description="List your restaurant, manage your menu, and receive orders from Luxebites customers." href="/apply/owner" portalUrl={restaurantPortalUrl} application={data.ownerApplication} approved={roles.has("RESTAURANT_OWNER")} /> : null}
-          {!isRestaurantOwner ? <PartnerCard kind="rider" title="Delivery Partner" description="Earn by delivering orders to Luxebites customers with a flexible delivery workspace." href="/apply/rider" portalUrl={riderPortalUrl} application={data.riderApplication} approved={roles.has("RIDER")} /> : null}
+          {!isRider ? <PartnerCard kind="restaurant" title="Restaurant Partner" description="List your restaurant, manage your menu, and receive orders from Cravio customers." href="/apply/owner" portalUrl={restaurantPortalUrl} application={data.ownerApplication} approved={roles.has("RESTAURANT_OWNER")} /> : null}
+          {!isRestaurantOwner ? <PartnerCard kind="rider" title="Delivery Partner" description="Earn by delivering orders to Cravio customers with a flexible delivery workspace." href="/apply/rider" portalUrl={riderPortalUrl} application={data.riderApplication} approved={roles.has("RIDER")} /> : null}
         </div>
       </div>
     </main>

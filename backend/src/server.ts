@@ -20,7 +20,7 @@ async function startServer() {
   }
 
   httpServer.listen(env.PORT, () => {
-    console.log(`Luxebites API is running on http://localhost:${env.PORT}`);
+    console.log(`Cravio API is running on http://localhost:${env.PORT}`);
   });
 }
 

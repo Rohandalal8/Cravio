@@ -1,4 +1,4 @@
-# Luxebites Rider
+# Cravio Rider
 
 The mobile-first delivery partner application. It uses the shared Express API, PostgreSQL/Prisma data, Firebase Authentication, and the existing Socket.IO server; it does not own a second backend or database.
 

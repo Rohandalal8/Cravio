@@ -18,7 +18,7 @@ export default function LoginPage() {
                         <div className="relative flex h-full flex-col justify-between p-10 text-[#fffaf1] xl:p-14">
                             <div className="flex items-center gap-3 text-sm font-semibold tracking-[0.18em] uppercase">
                                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5a524] text-xl text-[#273b32]">L</span>
-                                LuxeBites
+                                Cravio
                             </div>
                             <div className="max-w-md">
                                 <p className="mb-5 text-xs font-semibold tracking-[0.26em] text-[#f8c76d] uppercase">Good food, beautifully delivered</p>
@@ -32,7 +32,7 @@ export default function LoginPage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-sm font-semibold tracking-[0.16em] text-[#273b32] uppercase lg:hidden">
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5a524] text-[#273b32]">L</span>
-                                LuxeBites
+                                Cravio
                             </div>
                             <p className="ml-auto text-xs font-medium tracking-[0.14em] text-[#81786c] uppercase">Est. 2024 · NYC</p>
                         </div>

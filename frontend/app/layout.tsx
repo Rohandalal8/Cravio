@@ -11,10 +11,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "LuxeBites | Food worth slowing down for",
-  description: "Discover your next favorite meal with LuxeBites.",
+  title: "Cravio | Food worth slowing down for",
+  description: "Discover your next favorite meal with Cravio.",
   icons: {
-    icon: "/luxe-bites-admin-mark.svg",
+    icon: "/cravio-admin-mark.svg",
   },
 };
 

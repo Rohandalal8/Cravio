@@ -43,9 +43,9 @@ export default function RiderShell({ children }: { children: React.ReactNode }) 
       setRider({ ...next, user: next.user ?? rider.user });
     } finally { setBusy(false); }
   }
-  async function logout() { if (auth) await signOut(auth); window.localStorage.removeItem("luxebites-token"); router.replace("/login"); }
+  async function logout() { if (auth) await signOut(auth); window.localStorage.removeItem("cravio-token"); router.replace("/login"); }
   return <div className="app-shell">
-    <aside className={open ? "sidebar open" : "sidebar"}><div className="brand"><img src="/luxe-bites-admin-mark.svg" alt="" /> <span>Luxebites<small>Delivery partner</small></span><button className="close-menu" onClick={() => setOpen(false)} aria-label="Close menu"><X size={20} /></button></div>
+    <aside className={open ? "sidebar open" : "sidebar"}><div className="brand"><img src="/cravio-admin-mark.svg" alt="" /> <span>Cravio<small>Delivery partner</small></span><button className="close-menu" onClick={() => setOpen(false)} aria-label="Close menu"><X size={20} /></button></div>
       <nav aria-label="Main navigation">{links.map(([href, label, Icon]) => <Link key={href} href={href} className={pathname.startsWith(href) ? "nav-link active" : "nav-link"} onClick={() => setOpen(false)}><Icon size={19} />{label}</Link>)}</nav>
       <button className={rider?.isOnline ? "online-pill" : "online-pill offline"} onClick={() => void toggle()} disabled={busy}><i />{rider?.isOnline ? "You are online" : "Go online"}</button>
       <div className="sidebar-user"><div className="avatar">{rider?.user.name?.[0] ?? "R"}</div><div><strong>{rider?.user.name ?? "Rider"}</strong><small>{rider?.vehicleType ?? "Delivery partner"}</small></div><button onClick={() => void logout()} aria-label="Log out"><LogOut size={17} /></button></div>

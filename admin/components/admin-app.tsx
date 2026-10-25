@@ -139,7 +139,7 @@ function Login({
         <div className="brand-mark">
           L<span>✦</span>
         </div>
-        <p className="kicker">LUXEBITES / CONTROL CENTER</p>
+        <p className="kicker">CRAVIO / CONTROL CENTER</p>
         <h1>Welcome back.</h1>
         <p className="muted">
           Sign in with your administrator account to manage the platform.
@@ -152,7 +152,7 @@ function Login({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@luxebites.com"
+              placeholder="admin@cravio.com"
             />
           </label>
           <label>
@@ -182,7 +182,7 @@ function Login({
         </button>
         <p className="fine-print">
           Access is restricted to active ADMIN accounts. Your Firebase session
-          is verified by the Luxebites API.
+          is verified by the Cravio API.
         </p>
       </div>
     </main>
@@ -307,7 +307,7 @@ export default function AdminApp() {
           <span className="brand-mark small">
             L<span>✦</span>
           </span>
-          {!collapsed && <span>luxebites</span>}
+          {!collapsed && <span>cravio</span>}
           <button className="icon-button mobile-close" onClick={closeMobile}>
             <X size={18} />
           </button>
@@ -428,7 +428,7 @@ function DashboardView({
           <p className="kicker">SUNDAY, OCTOBER 04, 2026</p>
           <h1>Good evening, admin.</h1>
           <p className="muted">
-            Here&apos;s what&apos;s happening across Luxebites today.
+            Here&apos;s what&apos;s happening across Cravio today.
           </p>
         </div>
         <button className="secondary" onClick={() => window.location.reload()}>

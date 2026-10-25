@@ -1,6 +1,6 @@
-# Luxebites
+# Cravio
 
-Luxebites is a premium food discovery and delivery platform built with Next.js, Express, Prisma, PostgreSQL, and Firebase Authentication.
+Cravio is a premium food discovery and delivery platform built with Next.js, Express, Prisma, PostgreSQL, and Firebase Authentication.
 
 The current repository contains the customer application and shared backend foundation. The persistent catalog slice includes Prisma-backed restaurant discovery, restaurant detail, cuisines, menu categories, menu items, and development seed data.
 
@@ -9,7 +9,7 @@ The current repository contains the customer application and shared backend foun
 ```mermaid
 flowchart LR
     A[Customer Browser] --> B[Next.js Customer App]
-    B --> C[Express Luxebites API]
+    B --> C[Express Cravio API]
     C --> D[Prisma ORM]
     D --> E[PostgreSQL]
     C --> F[Firebase Auth]
@@ -18,7 +18,7 @@ flowchart LR
 ## Project structure
 
 ```text
-Luxebites/
+Cravio/
 ├─ frontend/       # customer app, port 3000
 ├─ restaurant/     # restaurant operations app, port 3001
 ├─ rider/          # rider app, port 3002
@@ -38,7 +38,7 @@ Create `.env.local` in `frontend` and `.env` in `backend` from the existing exam
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 # backend/.env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/luxebites?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cravio?schema=public"
 PORT=5000
 CLIENT_URL="http://localhost:3001"
 NODE_ENV="development"
@@ -86,4 +86,4 @@ npm run dev:admin
 npm run dev:backend
 ```
 
-Restaurant, rider, and admin dashboards call the shared protected APIs. Set a Firebase ID token in browser local storage under `luxebites-token` while those authentication screens are being completed.
+Restaurant, rider, and admin dashboards call the shared protected APIs. Set a Firebase ID token in browser local storage under `cravio-token` while those authentication screens are being completed.

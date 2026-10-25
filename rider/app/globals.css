@@ -7,7 +7,7 @@ body{background:var(--surface-muted);color:var(--text-primary);font-family:"Inte
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid rgb(232 93 74/.3);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
-/* Luxebites Premium rider workspace refinements */
+/* Cravio Premium rider workspace refinements */
 body{line-height:1.5}
 .sidebar{box-shadow:4px 0 18px rgb(37 33 38/.06)}
 .brand{color:var(--text-primary)}

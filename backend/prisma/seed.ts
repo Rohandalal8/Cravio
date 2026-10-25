@@ -49,9 +49,9 @@ const restaurants = [
 
 async function main() {
   const owner = await prisma.user.upsert({
-    where: { email: "owner@luxebites.test" },
+    where: { email: "owner@cravio.test" },
     update: {},
-    create: { email: "owner@luxebites.test", name: "Luxebites Demo Owner", role: UserRole.RESTAURANT_OWNER },
+    create: { email: "owner@cravio.test", name: "Cravio Demo Owner", role: UserRole.RESTAURANT_OWNER },
   });
 
   for (const [restaurantIndex, restaurant] of restaurants.entries()) {

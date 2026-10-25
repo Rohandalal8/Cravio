@@ -27,8 +27,8 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-[#eae3e5] bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-5 py-3.5 sm:px-8 lg:px-12">
         <Link href="/" className="flex shrink-0 items-center gap-3 text-sm font-bold tracking-[0.16em] text-[#8b1e3f] uppercase">
-          <img src="/luxe-bites-admin-mark.svg" alt="" className="h-9 w-9 rounded-xl" />
-          <span className="hidden sm:inline">LuxeBites</span>
+          <img src="/cravio-admin-mark.svg" alt="" className="h-9 w-9 rounded-xl" />
+          <span className="hidden sm:inline">Cravio</span>
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm font-semibold text-[#716a70] md:flex" aria-label="Main navigation">
