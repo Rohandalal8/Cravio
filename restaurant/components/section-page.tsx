@@ -7,7 +7,12 @@ type SectionPageProps = {
   actions?: { href: string; label: string }[];
 };
 
-export function SectionPage({ eyebrow, title, description, actions = [] }: SectionPageProps) {
+export function SectionPage({
+  eyebrow,
+  title,
+  description,
+  actions = [],
+}: SectionPageProps) {
   return (
     <main className="main">
       <header>
@@ -21,7 +26,11 @@ export function SectionPage({ eyebrow, title, description, actions = [] }: Secti
         <p>{description}</p>
         {actions.length > 0 && (
           <div className="page-actions">
-            {actions.map((action) => <Link className="button" href={action.href} key={action.href}>{action.label}</Link>)}
+            {actions.map((action) => (
+              <Link className="button" href={action.href} key={action.href}>
+                {action.label}
+              </Link>
+            ))}
           </div>
         )}
       </section>

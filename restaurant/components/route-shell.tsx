@@ -14,16 +14,35 @@ const links = [
   ["/settings", "Settings"],
 ] as const;
 
-export function RouteShell({ children }: Readonly<{ children: React.ReactNode }>) {
+export function RouteShell({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   return (
     <div className="shell">
       <aside className="side">
-        <Link className="brand" href="/"><span aria-hidden="true">✦</span><span>Cravio</span></Link>
+        <Link className="brand" href="/">
+          <span aria-hidden="true">✦</span>
+          <span>Cravio</span>
+        </Link>
         <nav aria-label="Restaurant workspace">
-          {links.map(([href, label]) => <Link className={pathname === href || (href !== "/" && pathname.startsWith(href)) ? "active" : ""} href={href} key={href}>{label}</Link>)}
+          {links.map(([href, label]) => (
+            <Link
+              className={
+                pathname === href || (href !== "/" && pathname.startsWith(href))
+                  ? "active"
+                  : ""
+              }
+              href={href}
+              key={href}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
-        <Link className="signout" href="/login">Sign out</Link>
+        <Link className="signout" href="/login">
+          Sign out
+        </Link>
       </aside>
       {children}
     </div>
