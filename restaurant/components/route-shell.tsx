@@ -22,7 +22,7 @@ export function RouteShell({
     <div className="shell">
       <aside className="side">
         <Link className="brand" href="/">
-          <span aria-hidden="true">✦</span>
+          <img src="/cravio-logo.svg" alt="Cravio" />
           <span>Cravio</span>
         </Link>
         <nav aria-label="Restaurant workspace">

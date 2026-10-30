@@ -136,9 +136,7 @@ function Login({
   return (
     <main className="login-shell">
       <div className="login-card">
-        <div className="brand-mark">
-          L<span>✦</span>
-        </div>
+        <img className="brand-mark" src="/cravio-logo.svg" alt="Cravio" />
         <p className="kicker">CRAVIO / CONTROL CENTER</p>
         <h1>Welcome back.</h1>
         <p className="muted">
@@ -304,9 +302,7 @@ export default function AdminApp() {
     <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside className={`sidebar ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="sidebar-brand">
-          <span className="brand-mark small">
-            L<span>✦</span>
-          </span>
+          <img className="brand-mark small" src="/cravio-logo.svg" alt="Cravio" />
           {!collapsed && <span>cravio</span>}
           <button className="icon-button mobile-close" onClick={closeMobile}>
             <X size={18} />

@@ -95,7 +95,7 @@ export default function RiderShell({
     <div className="app-shell">
       <aside className={open ? "sidebar open" : "sidebar"}>
         <div className="brand">
-          <img src="/cravio-admin-mark.svg" alt="" />{" "}
+          <img src="/cravio-logo.svg" alt="Cravio" />{" "}
           <span>
             Cravio<small>Delivery partner</small>
           </span>
