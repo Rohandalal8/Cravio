@@ -241,6 +241,7 @@ export default function AdminApp() {
     queryFn: () => apiRequest<Dashboard>("/admin/dashboard"),
     enabled: Boolean(profile.data),
     refetchInterval: 60000,
+    refetchOnWindowFocus: true,
   });
   const resourcePath =
     section === "applications" ? "/admin/applications" : `/admin/${section}`;
@@ -643,6 +644,9 @@ function ResourceView({
   action: (input: { path: string; method: string; body?: unknown }) => void;
 }) {
   const [search, setSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<
+    "ALL" | "CUSTOMER" | "RIDER" | "RESTAURANT_OWNER"
+  >("ALL");
   const applicationData =
     data && typeof data === "object"
       ? (data as { restaurants?: Row[]; riders?: Row[] })
@@ -655,9 +659,16 @@ function ResourceView({
             ...(applicationData.riders ?? []),
           ]
         : []) as Row[]);
-  const filtered = rows.filter((row) =>
-    JSON.stringify(row).toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = rows.filter((row) => {
+    const matchesSearch = JSON.stringify(row)
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesRole =
+      section !== "users" ||
+      userRoleFilter === "ALL" ||
+      row.role === userRoleFilter;
+    return matchesSearch && matchesRole;
+  });
   const singular = section.endsWith("s") ? section.slice(0, -1) : section;
   const updateStatus = (row: Row, status: string) => {
     const id = String(row.id);
@@ -703,6 +714,30 @@ function ResourceView({
         </div>
         <span className="result-count">{filtered.length} records</span>
       </div>
+      {section === "users" ? (
+        <div className="user-role-filters">
+          {[
+            ["ALL", "All"],
+            ["CUSTOMER", "Users"],
+            ["RIDER", "Riders"],
+            ["RESTAURANT_OWNER", "Restaurant owners"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              className={
+                userRoleFilter === value
+                  ? "filter-tab active"
+                  : "filter-tab"
+              }
+              onClick={() =>
+                setUserRoleFilter(value as typeof userRoleFilter)
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <section className="card table-card">
         {loading ? (
           <div className="table-loading">

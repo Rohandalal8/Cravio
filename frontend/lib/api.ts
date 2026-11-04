@@ -7,6 +7,7 @@ export function getApiBaseUrl() {
 }
 
 export async function syncFirebaseUser(firebaseUser: FirebaseUser, name?: string) {
+  const token = await firebaseUser.getIdToken(true);
   return apiFetch<{ success: true; data: {
     id: string;
     email: string | null;
@@ -18,7 +19,7 @@ export async function syncFirebaseUser(firebaseUser: FirebaseUser, name?: string
   } }>("/auth/sync", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${await firebaseUser.getIdToken()}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       name: name ?? firebaseUser.displayName ?? "Cravio user",
@@ -30,13 +31,20 @@ export async function syncFirebaseUser(firebaseUser: FirebaseUser, name?: string
 }
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new Error(
+      `Unable to connect to Cravio API at ${getApiBaseUrl()}. Start the backend on port 5000 and check CORS settings.`,
+    );
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);

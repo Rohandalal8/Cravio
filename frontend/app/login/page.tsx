@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { AuthProvider } from "@/contexts/auth-context";
 import Login from "@/components/login";
 import Register from "@/components/register";
 
@@ -10,7 +9,6 @@ export default function LoginPage() {
     const [isLogin, setIsLogin] = useState(true);
 
     return (
-        <AuthProvider>
             <main className="min-h-screen bg-[#f7f4ee] px-4 py-4 text-[#28241f] sm:px-6 lg:px-8">
                 <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1440px] overflow-hidden rounded-[2rem] bg-[#fffdf9] shadow-[0_24px_80px_rgba(51,42,29,0.12)] lg:grid-cols-[0.95fr_1.05fr]">
                     <section className="relative hidden min-h-[720px] overflow-hidden bg-[#273b32] lg:block">
@@ -56,6 +54,5 @@ export default function LoginPage() {
                     </section>
                 </div>
             </main>
-        </AuthProvider>
     )
 }

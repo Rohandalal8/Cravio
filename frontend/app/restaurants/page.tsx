@@ -1,14 +1,16 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { RestaurantCard } from "@/components/restaurant-card";
 import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
 
 const cuisines = ["all", "North Indian", "Chinese", "Cafe", "Pizza", "Biryani", "Healthy"];
 
-export default function RestaurantsPage() {
-  const [search, setSearch] = useState("");
+function RestaurantsPageContent() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [cuisine, setCuisine] = useState("all");
   const [vegOnly, setVegOnly] = useState(false);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -117,5 +119,13 @@ export default function RestaurantsPage() {
         )}
       </section>
       </main>
+  );
+}
+
+export default function RestaurantsPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#fff8f1]" />}>
+      <RestaurantsPageContent />
+    </Suspense>
   );
 }

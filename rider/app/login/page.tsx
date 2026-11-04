@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
 import { api } from "@/lib/api";
 import { auth, firebaseConfigured, googleProvider } from "@/lib/firebase";
 export default function LoginPage() {
@@ -46,7 +46,12 @@ export default function LoginPage() {
         throw new Error(
           "Firebase is not configured. Add the NEXT_PUBLIC_FIREBASE_* values to .env.local.",
         );
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user);
+        await signOut(auth);
+        throw new Error("Please verify your email first. A verification email has been sent.");
+      }
       await finish();
     } catch (e) {
       setError(

@@ -19,7 +19,13 @@ import uploadsRoutes from "./routes/uploads.routes.js";
 
 const app = express();
 
-const allowedOrigins = env.CLIENT_URL.split(",")
+const allowedOrigins = [
+  ...env.CLIENT_URL.split(","),
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+  "http://127.0.0.1:3003",
+]
   .map((origin) => origin.trim())
   .filter(Boolean);
 

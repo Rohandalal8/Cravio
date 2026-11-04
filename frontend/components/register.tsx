@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase";
+import { sendVerificationEmail, setDisplayName, signInWithGoogle, signUpWithEmail } from "@/lib/firebase";
 import { syncFirebaseUser } from "@/lib/api";
 
 export default function Register() {
@@ -20,10 +20,10 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const userCredential = await signUpWithEmail(email, password);
-      await syncFirebaseUser(userCredential.user, name);
-
-      router.push("/");
+      await signUpWithEmail(email, password);
+      await setDisplayName(name);
+      await sendVerificationEmail();
+      router.push("/verify-email");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to create account.");
     } finally {

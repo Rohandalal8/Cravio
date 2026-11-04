@@ -9,6 +9,7 @@ import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
 const categories = ["Pizza", "Biryani", "Chinese", "Cafe", "Healthy", "Desserts"];
 
 export default function HomePage() {
+  const [search, setSearch] = useState("");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -17,7 +18,7 @@ export default function HomePage() {
 
     const loadRestaurants = async () => {
       try {
-        const response = await fetchRestaurants({ search: "", rating: 4.5 });
+        const response = await fetchRestaurants();
         if (active) {
           setRestaurants(response.data ?? []);
         }
@@ -55,9 +56,11 @@ export default function HomePage() {
               <input
                 className="flex-1 rounded-xl border border-[#eae3e5] bg-white px-5 py-3.5 text-sm text-[#252126] outline-none ring-0 placeholder:text-[#716a70] focus:border-[#8b1e3f] focus:ring-2 focus:ring-[#8b1e3f]/15"
                 placeholder="Search restaurant, cuisine, or dish"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
               />
               <Link
-                href="/restaurants"
+                href={search ? `/restaurants?search=${encodeURIComponent(search)}` : "/restaurants"}
                 className="rounded-xl bg-[#8b1e3f] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#64152d]"
               >
                 Search now

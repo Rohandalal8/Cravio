@@ -8,7 +8,16 @@ import { env } from "../config/env.js";
 
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: env.CLIENT_URL.split(",").map((origin) => origin.trim()).filter(Boolean), credentials: true },
+    cors: {
+      origin: [
+        ...env.CLIENT_URL.split(","),
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "http://127.0.0.1:3003",
+      ].map((origin) => origin.trim()).filter(Boolean),
+      credentials: true,
+    },
   });
 
   io.use(async (socket, next) => {

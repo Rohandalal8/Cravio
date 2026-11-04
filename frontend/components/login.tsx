@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { signInWithEmail, signInWithGoogle } from "@/lib/firebase";
+import { sendVerificationEmail, signInWithEmail, signInWithGoogle } from "@/lib/firebase";
 import { syncFirebaseUser } from "@/lib/api";
 
 export default function Login() {
@@ -11,6 +11,11 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice] = useState(() =>
+    typeof window !== "undefined" && window.location.search.includes("verification=sent")
+      ? "Verification email sent. Verify your email before signing in."
+      : "",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -20,6 +25,11 @@ export default function Login() {
 
     try {
       const userCredential = await signInWithEmail(email, password);
+      if (!userCredential.user.emailVerified) {
+        await sendVerificationEmail();
+        router.push("/verify-email");
+        return;
+      }
       await syncFirebaseUser(userCredential.user);
       router.push("/");
     } catch (submitError) {
@@ -90,6 +100,7 @@ export default function Login() {
         />
       </div>
 
+      {notice ? <p className="text-sm text-[#28734f]">{notice}</p> : null}
       {error ? <p className="text-sm text-[#b3261e]">{error}</p> : null}
 
       <button type="submit" className="auth-button" disabled={isSubmitting}>

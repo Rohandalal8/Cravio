@@ -1,7 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  reload,
+  type User as FirebaseUser,
+} from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
 import { syncFirebaseUser } from "@/lib/api";
@@ -27,6 +31,12 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const getUserFromFirebase = async (firebaseUser: FirebaseUser | null): Promise<AuthUser | null> => {
   if (!firebaseUser) return null;
+
+  await reload(firebaseUser);
+  const tokenResult = await firebaseUser.getIdTokenResult(true);
+  if (!firebaseUser.emailVerified || tokenResult.claims.email_verified !== true) {
+    return null;
+  }
 
   const response = await syncFirebaseUser(firebaseUser);
   const data = response.data;
@@ -58,7 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const syncedUser = await getUserFromFirebase(nextFirebaseUser);
       setUser(syncedUser ?? null);
     } catch (error) {
-      console.error("Auth sync failed:", error);
+      if (
+        !(error instanceof Error) ||
+        !error.message.includes("Please verify your email")
+      ) {
+        console.error("Auth sync failed:", error);
+      }
       setUser(null);
     } finally {
       setLoading(false);

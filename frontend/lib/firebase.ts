@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut, updateProfile } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -25,6 +25,16 @@ export async function signInWithEmail(email: string, password: string) {
 export async function signUpWithEmail(email: string, password: string) {
   if (!auth) throw new Error("Firebase is not configured.");
   return createUserWithEmailAndPassword(auth, email, password);
+}
+
+export async function sendVerificationEmail() {
+  if (!auth?.currentUser) throw new Error("No account is signed in.");
+  await sendEmailVerification(auth.currentUser);
+}
+
+export async function setDisplayName(name: string) {
+  if (!auth?.currentUser) throw new Error("No account is signed in.");
+  await updateProfile(auth.currentUser, { displayName: name });
 }
 
 export async function signInWithGoogle() {

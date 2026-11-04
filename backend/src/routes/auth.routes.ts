@@ -83,6 +83,13 @@ router.post("/sync", async (req, res, next) => {
   try {
     const token = authHeader.replace("Bearer ", "").trim();
     const decodedToken = await admin.auth().verifyIdToken(token);
+    if (decodedToken.email && decodedToken.email_verified === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email before continuing.",
+        code: "EMAIL_NOT_VERIFIED",
+      });
+    }
 
     const userPayload = {
       firebaseUid: decodedToken.uid,

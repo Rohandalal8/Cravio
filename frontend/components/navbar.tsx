@@ -1,27 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu, ShoppingBag, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
-import { logout } from "@/lib/firebase";
 
 export function Navbar() {
-  const router = useRouter();
   const { user, loading } = useAuth();
   const { itemCount, openCart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const closeMenu = () => setIsMenuOpen(false);
-
-  async function handleLogout() {
-    await logout();
-    closeMenu();
-    router.push("/login");
-  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#eae3e5] bg-white/95 backdrop-blur-md">
@@ -37,8 +28,8 @@ export function Navbar() {
           {!loading && user ? (
             <>
               <Link href="/settings" className="transition hover:text-[#8b1e3f]">Settings</Link>
+              <Link href="/profile" className="transition hover:text-[#8b1e3f]">Profile</Link>
               <Link href="/notifications" className="transition hover:text-[#8b1e3f]">Notifications</Link>
-              <button type="button" onClick={handleLogout} className="transition hover:text-[#8b1e3f]">Logout</button>
             </>
           ) : (
             <Link href="/login" className="transition hover:text-[#8b1e3f]">Login</Link>
@@ -72,8 +63,8 @@ export function Navbar() {
             {!loading && user ? (
               <>
                 <Link href="/settings" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f7e9ed] hover:text-[#8b1e3f]">Settings</Link>
+                <Link href="/profile" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f7e9ed] hover:text-[#8b1e3f]">Profile</Link>
                 <Link href="/notifications" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f7e9ed] hover:text-[#8b1e3f]">Notifications</Link>
-                <button type="button" onClick={handleLogout} className="rounded-xl px-4 py-3 text-left hover:bg-[#f7e9ed] hover:text-[#8b1e3f]">Logout</button>
               </>
             ) : (
               <Link href="/login" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f7e9ed] hover:text-[#8b1e3f]">Login</Link>

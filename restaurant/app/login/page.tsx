@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  sendEmailVerification,
   signOut,
 } from "firebase/auth";
 import { apiFetch } from "@/lib/api";
@@ -52,6 +53,11 @@ export default function LoginPage() {
       const credential = mode === "create"
         ? await createUserWithEmailAndPassword(auth, email, password)
         : await signInWithEmailAndPassword(auth, email, password);
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user);
+        await signOut(auth);
+        throw new Error("Please verify your email first. A verification email has been sent.");
+      }
       await finishAuthentication(credential.user);
     } catch (cause) {
       await signOut(auth).catch(() => undefined);

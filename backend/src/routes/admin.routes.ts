@@ -40,7 +40,7 @@ router.get("/dashboard", requireAuth, requireAdmin, async (_req, res, next) => {
     ] = await Promise.all([
       prisma.user.count(),
       prisma.restaurant.count(),
-      prisma.rider.count(),
+      prisma.user.count({ where: { role: UserRole.RIDER } }),
       prisma.order.count(),
       prisma.deliveryTask.count({
         where: {
