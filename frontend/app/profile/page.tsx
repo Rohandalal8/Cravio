@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context";
@@ -9,7 +10,12 @@ import { logout } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, firebaseUser, loading } = useAuth();
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [user?.avatar, firebaseUser?.photoURL]);
 
   const handleLogout = async () => {
     await logout();
@@ -38,6 +44,12 @@ export default function ProfilePage() {
   }
 
   const displayName = user.name?.trim() || "Cravio user";
+  const avatar =
+    user.avatar ??
+    firebaseUser?.photoURL ??
+    firebaseUser?.providerData.find((provider) => provider.photoURL)?.photoURL ??
+    null;
+  const firstName = displayName.split(/\s+/)[0];
   const initials = displayName
     .split(/\s+/)
     .map((part) => part[0])
@@ -55,11 +67,11 @@ export default function ProfilePage() {
         <section className="mt-10 overflow-hidden rounded-[1.75rem] border border-[#e8e0d4] bg-white shadow-[0_14px_40px_rgba(40,36,31,0.05)]">
           <div className="bg-[#273b32] px-6 py-8 text-white sm:px-10">
             <div className="flex items-center gap-5">
-              {user.avatar ? (
-                <img src={user.avatar} alt="" className="h-20 w-20 rounded-full border-4 border-white/30 object-cover" />
+              {avatar && !avatarLoadFailed ? (
+                <img src={avatar} alt={`${displayName}'s profile`} onError={() => setAvatarLoadFailed(true)} className="h-20 w-20 rounded-full border-4 border-white/30 object-cover" />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f5a524] text-2xl font-bold text-[#273b32]">
-                  {initials}
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f5a524] px-2 text-center text-sm font-bold uppercase tracking-wide text-[#273b32]">
+                  {avatar ? firstName : initials}
                 </div>
               )}
               <div>

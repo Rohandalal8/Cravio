@@ -51,7 +51,7 @@ function PartnerCard({
         <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-[#d97732]">Partner portal</p>
         <h2 className="mt-2 font-serif text-3xl tracking-[-0.03em] text-[#28241f]">{title}</h2>
         <p className="mt-3 leading-7 text-[#6f675d]">Your application has been approved. Open your live Cravio workspace.</p>
-        <a href={portalUrl} className="mt-6 inline-flex items-center rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-[#fffaf1] transition hover:bg-[#1c2d25]">Open portal <ArrowUpRight size={17} className="ml-2" /></a>
+        <a href={portalUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center rounded-full bg-[#273b32] px-5 py-3 text-sm font-bold text-[#fffaf1] transition hover:bg-[#1c2d25]">Open portal <ArrowUpRight size={17} className="ml-2" /></a>
       </section>
     );
   }

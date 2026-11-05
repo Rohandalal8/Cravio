@@ -40,12 +40,17 @@ const getUserFromFirebase = async (firebaseUser: FirebaseUser | null): Promise<A
 
   const response = await syncFirebaseUser(firebaseUser);
   const data = response.data;
+  const avatar =
+    data.avatar ??
+    firebaseUser.photoURL ??
+    firebaseUser.providerData.find((provider) => provider.photoURL)?.photoURL ??
+    null;
 
   return {
     id: data.id,
     email: data.email,
     name: data.name,
-    avatar: data.avatar,
+    avatar,
     firebaseUid: data.firebaseUid,
     role: data.role,
     status: data.status,
