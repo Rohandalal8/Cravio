@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, isAccessFailure } from "@/lib/api";
 import { RouteShell } from "@/components/route-shell";
 
 type Kind =
@@ -86,6 +86,11 @@ export function OwnerPage({ kind }: { kind: Kind }) {
                 : `/restaurant/${kind}`;
             setData(await apiFetch(path, token));
           } catch (cause) {
+            if (isAccessFailure(cause)) {
+              setError("");
+              await signOut(auth);
+              return;
+            }
             setError(
               cause instanceof Error
                 ? cause.message
