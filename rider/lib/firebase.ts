@@ -11,6 +11,10 @@ const config = {
 };
 
 export const firebaseConfigured = Object.values(config).every(Boolean);
-export const firebaseApp = firebaseConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null;
+export const firebaseApp = firebaseConfigured
+  ? getApps().length
+    ? getApp()
+    : initializeApp(config)
+  : null;
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
 export const googleProvider = new GoogleAuthProvider();
