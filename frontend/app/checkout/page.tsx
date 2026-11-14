@@ -6,6 +6,51 @@ import { useState } from "react";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: {
+    name: string;
+    email?: string;
+    contact?: string;
+  };
+  theme: { color: string };
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
+  modal: { ondismiss: () => void };
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => { open: () => void };
+  }
+}
+
+function loadRazorpayScript() {
+  return new Promise<void>((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load Razorpay checkout."));
+    document.body.appendChild(script);
+  });
+}
+
 function CheckoutPageContent() {
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
   const { firebaseUser } = useAuth();
@@ -71,11 +116,12 @@ function CheckoutPageContent() {
         throw new Error("Please sign in before placing an order.");
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders`, {
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/payment/order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${await firebaseUser.getIdToken()}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
@@ -90,8 +136,60 @@ function CheckoutPageContent() {
         throw new Error(payload?.message ?? "Unable to place order.");
       }
 
-      setOrderNumber(payload.data.orderNumber);
-      clearCart();
+      await loadRazorpayScript();
+      const Razorpay = window.Razorpay;
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!Razorpay || !razorpayKey) {
+        throw new Error("Razorpay is not configured. Add NEXT_PUBLIC_RAZORPAY_KEY_ID to frontend/.env.local.");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const checkout = new Razorpay({
+          key: razorpayKey,
+          amount: payload.data.amount,
+          currency: payload.data.currency,
+          name: "Cravio",
+          description: `Food order ${payload.data.orderNumber}`,
+          order_id: payload.data.razorpayOrderId,
+          prefill: {
+            name: customerName,
+            email: firebaseUser.email ?? undefined,
+            contact: firebaseUser.phoneNumber ?? undefined,
+          },
+          theme: { color: "#8b1e3f" },
+          handler: async (payment) => {
+            try {
+              const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/payment/verify`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  orderId: payload.data.orderId,
+                  razorpayOrderId: payment.razorpay_order_id,
+                  razorpayPaymentId: payment.razorpay_payment_id,
+                  razorpaySignature: payment.razorpay_signature,
+                }),
+              });
+              const verificationPayload = await verificationResponse.json();
+              if (!verificationResponse.ok || !verificationPayload?.success) {
+                throw new Error(verificationPayload?.message ?? "Payment verification failed.");
+              }
+
+              setOrderNumber(verificationPayload.data.orderNumber);
+              clearCart();
+              resolve();
+            } catch (verificationError) {
+              reject(verificationError);
+            }
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment was cancelled.")),
+          },
+        });
+        checkout.open();
+      });
     } catch (submitError) {
       console.error(submitError);
       setError(submitError instanceof Error ? submitError.message : "Unable to place order.");

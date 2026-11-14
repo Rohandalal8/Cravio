@@ -2,7 +2,12 @@ import { Router } from "express";
 
 import prisma from "../config/prisma.js";
 import { requireAuth, requireCustomer } from "../middleware/auth.js";
-import { createOrder, previewCoupon } from "../services/order.service.js";
+import {
+  createOrder,
+  createRazorpayOrder,
+  previewCoupon,
+  verifyPayment,
+} from "../services/order.service.js";
 
 const router = Router();
 
@@ -79,6 +84,7 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
           message: "A delivery address is required.",
           code: "ADDRESS_REQUIRED",
         });
+
       return;
     }
 
@@ -110,6 +116,108 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
     next(error);
   }
 });
+
+router.post(
+  "/orders/payment/order",
+  requireAuth,
+  requireCustomer,
+  async (req, res, next) => {
+    try {
+      const items = Array.isArray(req.body?.items)
+        ? req.body.items.map((item: { id?: unknown; quantity?: unknown }) => ({
+            menuItemId: typeof item.id === "string" ? item.id : "",
+            quantity: Number(item.quantity),
+          }))
+        : [];
+      const address =
+        typeof req.body?.address === "string" ? req.body.address.trim() : "";
+      const couponCode =
+        typeof req.body?.couponCode === "string"
+          ? req.body.couponCode
+          : undefined;
+
+      if (!address) {
+        res.status(400).json({
+          success: false,
+          message: "A delivery address is required.",
+          code: "ADDRESS_REQUIRED",
+        });
+        return;
+      }
+
+      const { order, razorpayOrder } = await createRazorpayOrder({
+        userId: req.user!.id,
+        items,
+        address,
+        couponCode,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: `LB-${order.id.slice(-6).toUpperCase()}`,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          razorpayOrderId: razorpayOrder.id,
+          restaurantName: order.restaurant.name,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.post(
+  "/orders/payment/verify",
+  requireAuth,
+  requireCustomer,
+  async (req, res, next) => {
+    try {
+      const fields = [
+        "orderId",
+        "razorpayOrderId",
+        "razorpayPaymentId",
+        "razorpaySignature",
+      ] as const;
+      if (
+        fields.some(
+          (field) =>
+            typeof req.body?.[field] !== "string" || !req.body[field].trim(),
+        )
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Incomplete Razorpay payment details.",
+          code: "PAYMENT_DETAILS_REQUIRED",
+        });
+        return;
+      }
+
+      const order = await verifyPayment({
+        userId: req.user!.id,
+        orderId: req.body.orderId,
+        razorpayOrderId: req.body.razorpayOrderId,
+        razorpayPaymentId: req.body.razorpayPaymentId,
+        razorpaySignature: req.body.razorpaySignature,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: order.id,
+          orderNumber: `LB-${order.id.slice(-6).toUpperCase()}`,
+          restaurantName: order.restaurant.name,
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 router.post(
   "/orders/coupon/validate",

@@ -1,5 +1,8 @@
 import { OrderStatus, Prisma } from "@prisma/client";
+import crypto from "node:crypto";
+import Razorpay from "razorpay";
 
+import { env } from "../config/env.js";
 import prisma from "../config/prisma.js";
 
 type CheckoutItem = {
@@ -13,6 +16,28 @@ type CreateOrderInput = {
   address: string;
   couponCode?: string;
 };
+
+type VerifyPaymentInput = {
+  userId: string;
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+};
+
+function getRazorpayClient() {
+  if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+    throw Object.assign(new Error("Razorpay is not configured on the server."), {
+      statusCode: 503,
+      code: "RAZORPAY_NOT_CONFIGURED",
+    });
+  }
+
+  return new Razorpay({
+    key_id: env.RAZORPAY_KEY_ID,
+    key_secret: env.RAZORPAY_KEY_SECRET,
+  });
+}
 
 function couponError(message: string, code: string) {
   return Object.assign(new Error(message), { statusCode: 400, code });
@@ -103,6 +128,12 @@ export async function createOrder(input: CreateOrderInput) {
         tax,
         total,
         status: OrderStatus.PLACED,
+        payment: {
+          create: {
+            amount: total,
+            currency: "INR",
+          },
+        },
         items: {
           create: menuItems.map((item) => {
             const quantity = quantities.get(item.id) ?? 0;
@@ -133,4 +164,86 @@ export async function createOrder(input: CreateOrderInput) {
     }
     return order;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function createRazorpayOrder(input: CreateOrderInput) {
+  const razorpay = getRazorpayClient();
+  const order = await createOrder(input);
+  const razorpayOrder = await razorpay.orders.create({
+    amount: Math.round(order.total * 100),
+    currency: "INR",
+    receipt: order.id,
+    notes: {
+      cravioOrderId: order.id,
+      userId: input.userId,
+    },
+  });
+
+  await prisma.payment.update({
+    where: { orderId: order.id },
+    data: { razorpayOrderId: razorpayOrder.id },
+  });
+
+  return { order, razorpayOrder };
+}
+
+export async function verifyPayment(input: VerifyPaymentInput) {
+  if (!env.RAZORPAY_KEY_SECRET) {
+    throw Object.assign(new Error("Razorpay is not configured on the server."), {
+      statusCode: 503,
+      code: "RAZORPAY_NOT_CONFIGURED",
+    });
+  }
+
+  const payment = await prisma.payment.findFirst({
+    where: {
+      orderId: input.orderId,
+      order: { userId: input.userId },
+    },
+    include: { order: true },
+  });
+
+  if (!payment || payment.razorpayOrderId !== input.razorpayOrderId) {
+    throw Object.assign(new Error("Payment order does not match this checkout."), {
+      statusCode: 400,
+      code: "PAYMENT_ORDER_MISMATCH",
+    });
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", env.RAZORPAY_KEY_SECRET)
+    .update(`${input.razorpayOrderId}|${input.razorpayPaymentId}`)
+    .digest("hex");
+  const signaturesMatch =
+    expectedSignature.length === input.razorpaySignature.length &&
+    crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(input.razorpaySignature),
+    );
+
+  if (!signaturesMatch) {
+    throw Object.assign(new Error("Unable to verify Razorpay payment."), {
+      statusCode: 400,
+      code: "PAYMENT_SIGNATURE_INVALID",
+    });
+  }
+
+  const updatedOrder = await prisma.$transaction(async (transaction) => {
+    await transaction.payment.update({
+      where: { orderId: input.orderId },
+      data: {
+        razorpayPaymentId: input.razorpayPaymentId,
+        razorpaySignature: input.razorpaySignature,
+        status: "PAID",
+      },
+    });
+
+    return transaction.order.update({
+      where: { id: input.orderId },
+      data: { paymentStatus: "PAID" },
+      include: { restaurant: true, items: true, payment: true },
+    });
+  });
+
+  return updatedOrder;
 }

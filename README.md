@@ -74,7 +74,18 @@ The customer app runs at `http://localhost:3001`; the API runs at `http://localh
 - `GET /api/restaurants/:slug` returns a restaurant and its available menu categories and items.
 - `GET /api/health` verifies API availability.
 
-Checkout, role-based ownership, applications, delivery assignment, and authenticated Socket.IO rooms are implemented on the shared backend. Payment provider integration, notification persistence, and dedicated authentication screens remain deployment work.
+Checkout and Razorpay payment verification are implemented on the shared backend. To enable checkout payments, add these values:
+
+```bash
+# backend/.env
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+# frontend/.env.local
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_your_key_id
+```
+
+Use the test keys from **Razorpay Dashboard > Account & Settings > API Keys** for local development. Restart both applications after changing environment files. The checkout creates the order and amount on the server, opens Razorpay Checkout, verifies the returned signature on the server, and only then marks the order paid and clears the cart.
 
 ## Workspace commands
 
