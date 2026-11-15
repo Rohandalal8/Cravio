@@ -3,8 +3,6 @@ import Link from "next/link";
 import type { Restaurant } from "@/lib/restaurants";
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
-  const price = "$".repeat(Math.max(1, restaurant.priceLevel));
-
   return (
     <article className="group overflow-hidden rounded-2xl border border-[#eae3e5] bg-white shadow-[0_8px_24px_rgba(37,33,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(37,33,38,0.12)]">
       <div className="relative h-56 overflow-hidden">
@@ -44,8 +42,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           <span>{restaurant.deliveryTime}</span>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-[#8b1e3f]">{price}</span>
+        <div className="flex items-center justify-end">
           <Link
             href={`/restaurants/${restaurant.slug}`}
             className="rounded-full border border-[#eae3e5] bg-[#fff8f1] px-4 py-2 text-sm font-semibold text-[#8b1e3f] transition hover:border-[#8b1e3f] hover:bg-[#f7e9ed]"

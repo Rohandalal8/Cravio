@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -1115,28 +1116,46 @@ function ApplicationTable({
           </table>
         </div>
       )}
-      {selected ? (
-        <ApplicationDetails row={selected} close={() => setSelected(null)} />
-      ) : null}
+      {selected && typeof document !== "undefined"
+        ? createPortal(
+            <ApplicationDetails
+              row={selected}
+              close={() => setSelected(null)}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
 
 function ApplicationDetails({ row, close }: { row: Row; close: () => void }) {
   const applicant = (row.applicant ?? {}) as Row;
-  const entries = Object.entries(row).filter(
-    ([key, value]) =>
-      ![
-        "applicant",
-        "restaurant",
-        "id",
-        "applicantId",
-        "restaurantId",
-        "businessDocuments",
-      ].includes(key) &&
-      value !== null &&
-      value !== undefined &&
-      value !== "",
+  const restaurant = (row.restaurant ?? {}) as Row;
+  const hiddenKeys = new Set([
+    "applicant",
+    "restaurant",
+    "id",
+    "applicantId",
+    "restaurantId",
+    "businessDocuments",
+  ]);
+  const visibleEntries = (value: Row, excludedKeys = new Set<string>()) =>
+    Object.entries(value).filter(
+      ([key, entry]) =>
+        !excludedKeys.has(key) &&
+        entry !== null &&
+        entry !== undefined &&
+        entry !== "",
+    );
+  const applicantEntries = visibleEntries(
+    applicant,
+    new Set(["id", "firebaseUid", "createdAt", "updatedAt"]),
+  );
+  const applicationEntries = visibleEntries(row, hiddenKeys);
+  const restaurantEntries = visibleEntries(
+    restaurant,
+    new Set(["id", "ownerId", "slug", "createdAt", "updatedAt"]),
   );
   const documents = [
     ...(row.businessDocuments && typeof row.businessDocuments === "object"
@@ -1153,6 +1172,31 @@ function ApplicationDetails({ row, close }: { row: Row; close: () => void }) {
       .filter((key) => typeof row[key] === "string" && row[key])
       .map((key) => [key, row[key]] as const),
   ];
+  const formatLabel = (key: string) =>
+    key
+      .replaceAll(/([A-Z])/g, " $1")
+      .replace(/^./, (character) => character.toUpperCase());
+  const formatValue = (key: string, value: unknown) => {
+    if (key.endsWith("At")) {
+      const date = new Date(String(value));
+      if (!Number.isNaN(date.getTime())) return date.toLocaleString();
+    }
+    return typeof value === "object" ? JSON.stringify(value) : String(value);
+  };
+  const detailSection = (title: string, entries: Array<[string, unknown]>) =>
+    entries.length ? (
+      <section>
+        <p className="kicker">{title}</p>
+        <div className="details-grid">
+          {entries.map(([key, value]) => (
+            <div key={key}>
+              <small>{formatLabel(key)}</small>
+              <strong>{formatValue(key, value)}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null;
   return (
     <div className="application-details">
       <div className="application-details-card">
@@ -1169,18 +1213,9 @@ function ApplicationDetails({ row, close }: { row: Row; close: () => void }) {
           {String(applicant.name ?? row.fullName ?? "Applicant")} ·{" "}
           {String(applicant.email ?? row.email ?? "No email")}
         </p>
-        <div className="details-grid">
-          {entries.map(([key, value]) => (
-            <div key={key}>
-              <small>{key.replaceAll(/([A-Z])/g, " $1")}</small>
-              <strong>
-                {typeof value === "object"
-                  ? JSON.stringify(value)
-                  : String(value)}
-              </strong>
-            </div>
-          ))}
-        </div>
+        {detailSection("APPLICANT", applicantEntries)}
+        {detailSection("APPLICATION", applicationEntries)}
+        {detailSection("RESTAURANT", restaurantEntries)}
         {documents.length ? (
           <div className="document-list">
             <p className="kicker">SECURE DOCUMENTS</p>
@@ -1192,7 +1227,7 @@ function ApplicationDetails({ row, close }: { row: Row; close: () => void }) {
                 rel="noreferrer"
                 className="document-link"
               >
-                <span>{name.replaceAll(/([A-Z])/g, " $1")}</span>
+                <span>{formatLabel(name)}</span>
                 <span>Open document ↗</span>
               </a>
             ))}

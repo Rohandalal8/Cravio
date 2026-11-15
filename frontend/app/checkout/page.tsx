@@ -52,7 +52,7 @@ function loadRazorpayScript() {
 }
 
 function CheckoutPageContent() {
-  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { items, subtotal, deliveryFee, clearCart } = useCart();
   const { firebaseUser } = useAuth();
   const [customerName, setCustomerName] = useState("Guest user");
   const [address, setAddress] = useState("12 Garden Avenue, Bengaluru");
@@ -251,9 +251,10 @@ function CheckoutPageContent() {
               <span className="text-[#23804d]">-₹{appliedCoupon?.discount ?? 0}</span>
             </div>
             <div className="flex items-center justify-between"><span>Delivery fee</span><span>₹{deliveryFee}</span></div>
+            <div className="flex items-center justify-between"><span>Taxes</span><span>₹{estimatedTax}</span></div>
             <div className="flex items-center justify-between text-base font-bold text-[#273b32]">
               <span>Total</span>
-              <span>₹{appliedCoupon ? estimatedTotal : total}</span>
+              <span>₹{estimatedTotal}</span>
             </div>
           </div>
 

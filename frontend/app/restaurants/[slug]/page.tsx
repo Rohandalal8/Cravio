@@ -40,7 +40,6 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
     return () => { active = false; };
   }, [slug]);
 
-  const price = useMemo(() => (restaurant ? "$".repeat(Math.max(1, restaurant.priceLevel)) : ""), [restaurant]);
   const visibleMenuItems = useMemo(() => {
     const items = restaurant?.categories.flatMap((category) =>
       category.items.map((item) => ({ ...item, categoryName: category.name })),
@@ -116,10 +115,6 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
               </div>
 
               <div className="mt-8 space-y-4 rounded-[1.5rem] bg-[#f7f3ed] p-5">
-                <div className="flex items-center justify-between text-sm text-[#5b554e]">
-                  <span>Price</span>
-                  <span className="font-bold text-[#273b32]">{price}</span>
-                </div>
                 <div className="flex items-center justify-between text-sm text-[#5b554e]">
                   <span>Delivery</span>
                   <span className="font-bold text-[#273b32]">{restaurant.deliveryTime}</span>

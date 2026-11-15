@@ -15,7 +15,14 @@ router.get("/orders", requireAuth, requireCustomer, async (req, res, next) => {
   try {
     const orders = await prisma.order.findMany({
       where: { userId: req.user!.id },
-      include: { restaurant: true, items: true },
+      include: {
+        restaurant: true,
+        items: {
+          include: {
+            menuItem: { select: { image: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 

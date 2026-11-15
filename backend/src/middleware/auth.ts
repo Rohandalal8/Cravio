@@ -106,7 +106,28 @@ export function requireRole(...roles: UserRoleType[]) {
   };
 }
 
-export const requireCustomer = requireRole("CUSTOMER");
+export const requireCustomer = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (
+    req.user &&
+    new Set<UserRole>([
+      UserRole.CUSTOMER,
+      UserRole.RIDER,
+      UserRole.RESTAURANT_OWNER,
+    ]).has(req.user.role)
+  ) {
+    return next();
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: "You do not have permission to perform this action.",
+    code: "FORBIDDEN",
+  });
+};
 export const requireRestaurantOwner = requireRole("RESTAURANT_OWNER");
 export const requireRider = requireRole("RIDER");
 export const requireAdmin = requireRole("ADMIN");

@@ -4,14 +4,53 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/auth-context";
+import { useCart } from "@/contexts/cart-context";
 import { logout } from "@/lib/firebase";
+import { getApiBaseUrl } from "@/lib/api";
+
+type OrderHistoryItem = {
+  id: string;
+  total: number;
+  status: string;
+  paymentStatus: string;
+  createdAt: string;
+  restaurant: { id: string; name: string; slug: string };
+  items: Array<{
+    id: string;
+    menuItemId: string;
+    price: number;
+    name: string;
+    quantity: number;
+    menuItem: { image: string | null };
+  }>;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, firebaseUser, loading } = useAuth();
+  const { addItem } = useCart();
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const orders = useQuery({
+    queryKey: ["profile-orders", user?.id],
+    enabled: Boolean(user && firebaseUser && !loading),
+    queryFn: async () => {
+      const token = await firebaseUser!.getIdToken();
+      const response = await fetch(`${getApiBaseUrl()}/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        data?: OrderHistoryItem[];
+        message?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.message ?? "Unable to load order history.");
+      }
+      return payload?.data ?? [];
+    },
+  });
 
   useEffect(() => {
     setAvatarLoadFailed(false);
@@ -20,6 +59,22 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout();
     router.replace("/login");
+  };
+
+  const handleOrderAgain = (order: OrderHistoryItem) => {
+    order.items.forEach((item) => {
+      addItem({
+        id: item.menuItemId,
+        name: item.name,
+        restaurantId: order.restaurant.id,
+        restaurantName: order.restaurant.name,
+        slug: order.restaurant.slug,
+        image: item.menuItem.image,
+        price: item.price,
+        quantity: item.quantity,
+      });
+    });
+    router.push("/cart");
   };
 
   if (loading) {
@@ -111,6 +166,74 @@ export default function ProfilePage() {
               <LogOut size={16} /> Log out
             </button>
           </div>
+        </section>
+
+        <section className="mt-8 rounded-[1.75rem] border border-[#e8e0d4] bg-white p-6 shadow-[0_14px_40px_rgba(40,36,31,0.05)] sm:p-10">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d97732]">Your activity</p>
+              <h2 className="mt-2 font-serif text-3xl tracking-[-0.03em]">Order history</h2>
+            </div>
+            <Link href="/restaurants" className="text-sm font-bold text-[#8b1e3f] hover:text-[#64152d]">
+              Browse restaurants →
+            </Link>
+          </div>
+          {orders.isLoading ? (
+            <p className="mt-6 text-sm text-[#81786c]">Loading your orders...</p>
+          ) : orders.isError ? (
+            <p className="mt-6 rounded-xl bg-[#fff6f5] p-4 text-sm text-[#8b1f1f]">
+              {orders.error instanceof Error ? orders.error.message : "Unable to load order history."}
+            </p>
+          ) : !orders.data?.length ? (
+            <p className="mt-6 rounded-2xl bg-[#fffaf0] p-5 text-sm text-[#81786c]">
+              You have not placed any orders yet.
+            </p>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {orders.data.map((order) => (
+                <article key={order.id} className="grid gap-4 rounded-2xl border border-[#eee7dc] bg-[#fffdf9] p-4 sm:grid-cols-[72px_1fr_auto] sm:items-center sm:p-5">
+                  <div className="h-[72px] w-[72px] overflow-hidden rounded-xl bg-[#f2e7d8]">
+                    {order.items[0]?.menuItem.image ? (
+                      <img
+                        src={order.items[0].menuItem.image}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-2xl" aria-hidden="true">
+                        🍽️
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-[#28241f]">{order.restaurant.name}</p>
+                      <span className="rounded-full bg-[#e8f4eb] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#28734f]">
+                        {order.status.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                    <p className="mt-2 truncate text-sm text-[#5f574e]">
+                      {order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")}
+                    </p>
+                    <p className="mt-2 text-xs text-[#a49b8f]">
+                      {new Date(order.createdAt).toLocaleString()} · Payment {order.paymentStatus.toLowerCase()}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-t border-[#eee7dc] pt-3 sm:block sm:border-0 sm:pt-0 sm:text-right">
+                    <span className="text-xs font-semibold text-[#81786c]">Total paid</span>
+                    <p className="font-bold text-[#273b32]">₹{order.total.toFixed(2)}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleOrderAgain(order)}
+                      className="mt-3 rounded-full bg-[#8b1e3f] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#64152d]"
+                    >
+                      Order again
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>
