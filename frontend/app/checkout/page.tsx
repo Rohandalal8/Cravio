@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -28,6 +28,15 @@ type RazorpayOptions = {
   handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
   modal: { ondismiss: () => void };
 };
+
+const orderSteps = [
+  ["PLACED", "Order placed", "We have received your order."],
+  ["CONFIRMED", "Order accepted", "The restaurant has accepted your order."],
+  ["PREPARING", "Being prepared", "Your food is being prepared fresh."],
+  ["READY", "Ready for pickup", "Your order is ready."],
+  ["OUT_FOR_DELIVERY", "Out for delivery", "Your order is on the way."],
+  ["DELIVERED", "Delivered", "Enjoy your meal!"],
+] as const;
 
 declare global {
   interface Window {
@@ -58,6 +67,9 @@ function CheckoutPageContent() {
   const [address, setAddress] = useState("12 Garden Avenue, Bengaluru");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [trackedStatus, setTrackedStatus] = useState("PLACED");
+  const [trackingError, setTrackingError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
@@ -65,6 +77,47 @@ function CheckoutPageContent() {
   const discountedSubtotal = Math.max(0, subtotal - (appliedCoupon?.discount ?? 0));
   const estimatedTax = Math.round(discountedSubtotal * 0.05 * 100) / 100;
   const estimatedTotal = discountedSubtotal + deliveryFee + estimatedTax;
+
+  useEffect(() => {
+    if (!orderId || !firebaseUser) return;
+    let cancelled = false;
+
+    const loadOrderStatus = async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/${orderId}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const payload = (await response.json().catch(() => null)) as {
+          data?: { status?: string };
+          message?: string;
+        } | null;
+        if (!response.ok) {
+          throw new Error(payload?.message ?? "Unable to update order status.");
+        }
+        if (!cancelled) {
+          setTrackedStatus(payload?.data?.status ?? "PLACED");
+          setTrackingError(null);
+        }
+      } catch (cause) {
+        if (!cancelled) {
+          setTrackingError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to update order status.",
+          );
+        }
+      }
+    };
+
+    void loadOrderStatus();
+    const interval = window.setInterval(() => void loadOrderStatus(), 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [firebaseUser, orderId]);
 
   const handleApplyCoupon = async () => {
     if (!firebaseUser || !couponCode.trim()) {
@@ -178,6 +231,7 @@ function CheckoutPageContent() {
               }
 
               setOrderNumber(verificationPayload.data.orderNumber);
+              setOrderId(verificationPayload.data.id);
               clearCart();
               resolve();
             } catch (verificationError) {
@@ -199,13 +253,46 @@ function CheckoutPageContent() {
   };
 
   if (orderNumber) {
+    const cancelled = trackedStatus === "CANCELLED";
+    const activeStep = orderSteps.findIndex(([status]) => status === trackedStatus);
     return (
       <main className="min-h-screen bg-[#fff8f1] px-5 py-10 text-[#252126] sm:px-8 lg:px-12">
-        <div className="mx-auto max-w-[700px] rounded-2xl border border-[#eae3e5] bg-white p-10 text-center shadow-[0_16px_40px_rgba(37,33,38,0.06)]">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">Order confirmed</p>
-          <h1 className="mt-4 font-serif text-4xl tracking-[-0.04em]">{orderNumber}</h1>
-          <p className="mt-3 text-base leading-7 text-[#665d55]">Your food is being prepared and your rider is on the way.</p>
-          <Link href="/restaurants" className="mt-8 inline-flex rounded-full bg-[#8b1e3f] px-5 py-3 text-sm font-semibold text-white">
+        <div className="mx-auto max-w-[700px] rounded-2xl border border-[#eae3e5] bg-white p-6 shadow-[0_16px_40px_rgba(37,33,38,0.06)] sm:p-10">
+          <div className="text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#e85d4a]">
+              {cancelled ? "Order cancelled" : "Order tracking"}
+            </p>
+            <h1 className="mt-4 font-serif text-4xl tracking-[-0.04em]">{orderNumber}</h1>
+            <p className="mt-3 text-base leading-7 text-[#665d55]">
+              {cancelled
+                ? "This order was cancelled by the restaurant."
+                : "We will keep this page updated as your order moves forward."}
+            </p>
+          </div>
+          {!cancelled ? (
+            <div className="mt-8 space-y-4">
+              {orderSteps.map(([status, title, description], index) => {
+                const complete = activeStep >= index;
+                const current = trackedStatus === status;
+                return (
+                  <div key={status} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${complete ? "bg-[#273b32] text-white" : "bg-[#eee7dc] text-[#a49b8f]"}`}>
+                        {complete ? "✓" : index + 1}
+                      </span>
+                      {index < orderSteps.length - 1 ? <span className={`mt-1 h-8 w-px ${activeStep > index ? "bg-[#273b32]" : "bg-[#eee7dc]"}`} /> : null}
+                    </div>
+                    <div className="pb-3">
+                      <p className={`font-semibold ${current ? "text-[#8b1e3f]" : "text-[#28241f]"}`}>{title}</p>
+                      <p className="mt-1 text-sm text-[#81786c]">{description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          {trackingError ? <p className="mt-4 rounded-xl bg-[#fff6f5] p-3 text-sm text-[#8b1f1f]">{trackingError}</p> : null}
+          <Link href="/restaurants" className="mt-8 inline-flex w-full justify-center rounded-full bg-[#8b1e3f] px-5 py-3 text-sm font-semibold text-white">
             Order more food
           </Link>
         </div>

@@ -524,6 +524,16 @@ header {
   font-size: 1rem;
 }
 
+.settings-image-preview {
+  display: block;
+  width: min(100%, 320px);
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  object-fit: cover;
+}
+
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
