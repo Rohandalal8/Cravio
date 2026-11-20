@@ -57,6 +57,17 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      name: "Cravio API",
+      version: "1.0.0",
+      status: "online",
+    },
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
