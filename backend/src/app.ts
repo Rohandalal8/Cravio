@@ -23,6 +23,7 @@ const helmet = require("helmet") as typeof import("helmet").default;
 
 const allowedOrigins = [
   ...env.CLIENT_URL.split(","),
+  "https://cravioo.vercel.app",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:3001",
   "http://127.0.0.1:3002",
@@ -39,7 +40,13 @@ app.use(
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Origin not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
