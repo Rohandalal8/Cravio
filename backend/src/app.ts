@@ -21,16 +21,24 @@ const app = express();
 const require = createRequire(import.meta.url);
 const helmet = require("helmet") as typeof import("helmet").default;
 
-const allowedOrigins = [
-  ...env.CLIENT_URL.split(","),
-  "https://cravioo.vercel.app",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3001",
-  "http://127.0.0.1:3002",
-  "http://127.0.0.1:3003",
-]
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const corsOptions: cors.CorsOptions = {
+  origin: "https://cravioo.vercel.app",
+  credentials: true,
+  methods: [
+    "GET",
+    "HEAD",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+  optionsSuccessStatus: 204,
+};
 
 app.use(
   helmet({
@@ -38,18 +46,20 @@ app.use(
   }),
 );
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error("Origin not allowed by CORS"));
-    },
-    credentials: true,
-  }),
-);
+app.use(cors(corsOptions));
+
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//         return;
+//       }
+//       callback(new Error("Origin not allowed by CORS"));
+//     },
+//     credentials: true,
+//   }),
+// );
 
 app.use(
   rateLimit({
