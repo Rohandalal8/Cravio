@@ -1,7 +1,7 @@
 import cors from "cors";
 import express from "express";
-import rateLimit from "express-rate-limit";
-import helmet from "helmet";
+import { createRequire } from "node:module";
+import { rateLimit } from "express-rate-limit";
 import morgan from "morgan";
 
 import { env } from "./config/env.js";
@@ -18,6 +18,8 @@ import restaurantsRoutes from "./routes/restaurants.routes.js";
 import uploadsRoutes from "./routes/uploads.routes.js";
 
 const app = express();
+const require = createRequire(import.meta.url);
+const helmet = require("helmet") as typeof import("helmet").default;
 
 const allowedOrigins = [
   ...env.CLIENT_URL.split(","),
