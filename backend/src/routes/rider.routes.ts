@@ -430,6 +430,19 @@ for (const [action, transition] of Object.entries(transitions)) {
               message: "This delivery cannot be moved to that stage.",
               code: "INVALID_DELIVERY_TRANSITION",
             });
+        if (action === "pickup") {
+          const order = await prisma.order.findUnique({
+            where: { id: task.orderId },
+            select: { status: true },
+          });
+          if (order?.status !== OrderStatus.READY) {
+            return res.status(409).json({
+              success: false,
+              message: "The restaurant has not marked this order ready yet.",
+              code: "ORDER_NOT_READY",
+            });
+          }
+        }
         const completed = action === "complete";
         const result = await prisma.$transaction(async (transaction) => {
           const updated = await transaction.deliveryTask.update({
@@ -452,6 +465,11 @@ for (const [action, transition] of Object.entries(transitions)) {
             });
             await transaction.riderEarning.create({
               data: { riderId: rider!.id, deliveryTaskId: task.id, amount: 50 },
+            });
+          } else if (action === "start") {
+            await transaction.order.update({
+              where: { id: task.orderId },
+              data: { status: OrderStatus.OUT_FOR_DELIVERY },
             });
           }
           return updated;

@@ -17,6 +17,7 @@ type OrderHistoryItem = {
   status: string;
   paymentStatus: string;
   createdAt: string;
+  deliveryTask: { status: string } | null;
   restaurant: { id: string; name: string; slug: string };
   items: Array<{
     id: string;
@@ -209,7 +210,11 @@ export default function ProfilePage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-[#28241f]">{order.restaurant.name}</p>
                       <span className="rounded-full bg-[#e8f4eb] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#28734f]">
-                        {order.status.replaceAll("_", " ")}
+                        {(order.deliveryTask &&
+                        ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.deliveryTask.status)
+                          ? order.deliveryTask.status
+                          : order.status
+                        ).replaceAll("_", " ")}
                       </span>
                     </div>
                     <p className="mt-2 truncate text-sm text-[#5f574e]">

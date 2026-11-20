@@ -1,4 +1,9 @@
-import { ApplicationStatus, OrderStatus, UserRole } from "@prisma/client";
+import {
+  ApplicationStatus,
+  DeliveryTaskStatus,
+  OrderStatus,
+  UserRole,
+} from "@prisma/client";
 import { Router } from "express";
 
 import prisma from "../config/prisma.js";
@@ -331,7 +336,7 @@ router.get(
     try {
       const orders = await prisma.order.findMany({
         where: { restaurant: { ownerId: req.user!.id } },
-        include: { restaurant: true, items: true, address: true },
+        include: { restaurant: true, items: true, address: true, deliveryTask: true },
         orderBy: { createdAt: "desc" },
       });
       res.status(200).json({ success: true, data: orders });
@@ -386,9 +391,21 @@ router.patch(
         return;
       }
 
-      const updatedOrder = await prisma.order.update({
-        where: { id: order.id },
-        data: { status },
+      const updatedOrder = await prisma.$transaction(async (transaction) => {
+        const updated = await transaction.order.update({
+          where: { id: order.id },
+          data: { status },
+        });
+
+        if (status === OrderStatus.CONFIRMED) {
+          await transaction.deliveryTask.upsert({
+            where: { orderId: order.id },
+            update: { status: DeliveryTaskStatus.SEARCHING_RIDER, riderId: null },
+            create: { orderId: order.id, status: DeliveryTaskStatus.SEARCHING_RIDER },
+          });
+        }
+
+        return updated;
       });
       res.status(200).json({ success: true, data: updatedOrder });
     } catch (error) {

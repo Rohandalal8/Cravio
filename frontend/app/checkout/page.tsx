@@ -34,6 +34,8 @@ const orderSteps = [
   ["CONFIRMED", "Order accepted", "The restaurant has accepted your order."],
   ["PREPARING", "Being prepared", "Your food is being prepared fresh."],
   ["READY", "Ready for pickup", "Your order is ready."],
+  ["RIDER_ASSIGNED", "Rider accepted", "A rider is assigned to your order."],
+  ["PICKED_UP", "Picked up", "The rider has collected your order."],
   ["OUT_FOR_DELIVERY", "Out for delivery", "Your order is on the way."],
   ["DELIVERED", "Delivered", "Enjoy your meal!"],
 ] as const;
@@ -69,6 +71,7 @@ function CheckoutPageContent() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [trackedStatus, setTrackedStatus] = useState("PLACED");
+  const [trackedDeliveryStatus, setTrackedDeliveryStatus] = useState<string | null>(null);
   const [trackingError, setTrackingError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
@@ -90,7 +93,7 @@ function CheckoutPageContent() {
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const payload = (await response.json().catch(() => null)) as {
-          data?: { status?: string };
+          data?: { status?: string; deliveryTask?: { status?: string } | null };
           message?: string;
         } | null;
         if (!response.ok) {
@@ -98,6 +101,7 @@ function CheckoutPageContent() {
         }
         if (!cancelled) {
           setTrackedStatus(payload?.data?.status ?? "PLACED");
+          setTrackedDeliveryStatus(payload?.data?.deliveryTask?.status ?? null);
           setTrackingError(null);
         }
       } catch (cause) {
@@ -254,7 +258,12 @@ function CheckoutPageContent() {
 
   if (orderNumber) {
     const cancelled = trackedStatus === "CANCELLED";
-    const activeStep = orderSteps.findIndex(([status]) => status === trackedStatus);
+    const displayStatus =
+      trackedDeliveryStatus &&
+      ["RIDER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"].includes(trackedDeliveryStatus)
+        ? trackedDeliveryStatus
+        : trackedStatus;
+    const activeStep = orderSteps.findIndex(([status]) => status === displayStatus);
     return (
       <main className="min-h-screen bg-[#fff8f1] px-5 py-10 text-[#252126] sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[700px] rounded-2xl border border-[#eae3e5] bg-white p-6 shadow-[0_16px_40px_rgba(37,33,38,0.06)] sm:p-10">
@@ -273,7 +282,7 @@ function CheckoutPageContent() {
             <div className="mt-8 space-y-4">
               {orderSteps.map(([status, title, description], index) => {
                 const complete = activeStep >= index;
-                const current = trackedStatus === status;
+                const current = displayStatus === status;
                 return (
                   <div key={status} className="flex gap-4">
                     <div className="flex flex-col items-center">

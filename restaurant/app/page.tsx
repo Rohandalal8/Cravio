@@ -56,6 +56,12 @@ export default function RestaurantDashboard() {
     [],
   );
 
+  useEffect(() => {
+    if (!user) return;
+    const interval = window.setInterval(() => void load(user), 8000);
+    return () => window.clearInterval(interval);
+  }, [user]);
+
   const pending = useMemo(() => orders.filter((order) => order.status === "PLACED").length, [orders]);
   const advance = async (order: Order) => {
     const next = order.status === "PLACED" ? "CONFIRMED" : order.status === "CONFIRMED" ? "PREPARING" : order.status === "PREPARING" ? "READY" : null;

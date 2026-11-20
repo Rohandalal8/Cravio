@@ -25,6 +25,10 @@ export default function DeliveriesPage() {
       .catch((e: Error) => setError(e.message));
   };
   useEffect(load, []);
+  useEffect(() => {
+    const interval = window.setInterval(load, 8000);
+    return () => window.clearInterval(interval);
+  }, []);
   async function accept(id: string) {
     try {
       await api(`/rider/deliveries/${id}/accept`, { method: "POST" });

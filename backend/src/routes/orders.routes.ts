@@ -22,6 +22,7 @@ router.get("/orders", requireAuth, requireCustomer, async (req, res, next) => {
             menuItem: { select: { image: true } },
           },
         },
+        deliveryTask: { select: { status: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -47,6 +48,11 @@ router.get(
           items: true,
           address: true,
           payment: true,
+          deliveryTask: {
+            include: {
+              rider: { include: { user: { select: { name: true, phone: true } } } },
+            },
+          },
         },
       });
 
