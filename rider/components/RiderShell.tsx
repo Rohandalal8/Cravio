@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ApiError, api } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 
@@ -55,23 +55,42 @@ export default function RiderShell({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
-    void api<Rider>("/rider/me")
-      .then(setRider)
-      .catch((cause: unknown) => {
-        if (
-          cause instanceof ApiError &&
-          (cause.status === 401 || cause.status === 403)
-        ) {
-          router.replace(cause.status === 403 ? "/unauthorized" : "/login");
-          return;
-        }
-        setLoadError(
-          cause instanceof Error
-            ? cause.message
-            : "Unable to load your rider profile.",
-        );
-      });
+    if (!auth) {
+      window.localStorage.removeItem("cravio-token");
+      setAuthChecked(true);
+      router.replace("/login");
+      return;
+    }
+
+    return onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser) {
+        window.localStorage.removeItem("cravio-token");
+        setRider(null);
+        setAuthChecked(true);
+        router.replace("/login");
+        return;
+      }
+
+      setAuthChecked(true);
+      void api<Rider>("/rider/me")
+        .then(setRider)
+        .catch((cause: unknown) => {
+          if (
+            cause instanceof ApiError &&
+            (cause.status === 401 || cause.status === 403)
+          ) {
+            router.replace(cause.status === 403 ? "/unauthorized" : "/login");
+            return;
+          }
+          setLoadError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to load your rider profile.",
+          );
+        });
+    });
   }, [router]);
   async function toggle() {
     if (!rider || busy) return;
@@ -90,6 +109,14 @@ export default function RiderShell({
     if (auth) await signOut(auth);
     window.localStorage.removeItem("cravio-token");
     router.replace("/login");
+  }
+  if (!authChecked) {
+    return (
+      <div className="center-state">
+        <div className="spinner" />
+        <p>Checking rider session...</p>
+      </div>
+    );
   }
   return (
     <div className="app-shell">
