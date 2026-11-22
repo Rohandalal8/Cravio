@@ -25,6 +25,8 @@ const allowedOrigins = [
   ...env.CLIENT_URL.split(","),
   "https://cravioo.vercel.app",
   "https://cravioo-admin.vercel.app",
+  "https://cravio-rider.vercel.app",
+  "https://cravio-restaurant.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",

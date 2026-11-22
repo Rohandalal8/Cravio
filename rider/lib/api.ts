@@ -1,6 +1,12 @@
 import { auth } from "./firebase";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const configuredApiUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://cravio-api.vercel.app/api";
+
+export const API_URL = configuredApiUrl
+  .replace(/^http:\/\/(?!localhost(?:[/:]|$)|127\.0\.0\.1(?:[/:]|$))/i, "https://")
+  .replace(/\/+$/, "");
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
