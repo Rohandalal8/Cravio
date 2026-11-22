@@ -1,4 +1,10 @@
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const configuredApiUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://cravioo-api.vercel.app/api";
+
+export const apiBase = configuredApiUrl
+  .replace(/^http:\/\/(?!localhost(?:[/:]|$)|127\.0\.0\.1(?:[/:]|$))/i, "https://")
+  .replace(/\/+$/, "");
 
 export class ApiError extends Error {
   constructor(

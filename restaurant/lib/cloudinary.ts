@@ -1,4 +1,10 @@
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const configuredApiUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://cravioo-api.vercel.app/api";
+
+const apiUrl = configuredApiUrl
+  .replace(/^http:\/\/(?!localhost(?:[/:]|$)|127\.0\.0\.1(?:[/:]|$))/i, "https://")
+  .replace(/\/+$/, "");
 
 type UploadSignature = {
   apiKey: string;
