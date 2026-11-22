@@ -12,6 +12,7 @@ export function createSocketServer(httpServer: HttpServer) {
       origin: [
         ...env.CLIENT_URL.split(","),
         "https://cravioo.vercel.app",
+        "https://cravioo-admin.vercel.app",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
