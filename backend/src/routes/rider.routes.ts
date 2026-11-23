@@ -56,6 +56,33 @@ async function getRider(userId: string) {
   });
 }
 
+async function getRiderCity(userId: string) {
+  const application = await prisma.riderApplication.findFirst({
+    where: { applicantId: userId, status: "APPROVED" },
+    orderBy: { updatedAt: "desc" },
+  });
+  return application?.city?.trim() || null;
+}
+
+function distanceKm(
+  latitude1: number,
+  longitude1: number,
+  latitude2: number,
+  longitude2: number,
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(latitude2 - latitude1);
+  const dLon = toRadians(longitude2 - longitude1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(latitude1)) *
+      Math.cos(toRadians(latitude2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function routeParam(value: string | string[] | undefined) {
   return typeof value === "string" ? value : value?.[0];
 }
@@ -292,7 +319,31 @@ router.get("/deliveries", requireAuth, requireRider, async (req, res, next) => {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-    res.json({ success: true, data: tasks });
+    const riderCity = await getRiderCity(req.user!.id);
+    const filteredTasks = tasks.filter((task) => {
+      if (task.riderId === rider.id) return true;
+      if (task.riderId) return false;
+      const deliveryCity =
+        task.order.address?.city?.trim() ||
+        task.order.restaurant.address?.trim() ||
+        "";
+      if (riderCity && deliveryCity.toLowerCase().includes(riderCity.toLowerCase())) return true;
+      if (
+        rider.currentLatitude !== null &&
+        rider.currentLongitude !== null &&
+        task.deliveryLatitude !== null &&
+        task.deliveryLongitude !== null
+      ) {
+        return distanceKm(
+          rider.currentLatitude,
+          rider.currentLongitude,
+          task.deliveryLatitude,
+          task.deliveryLongitude,
+        ) <= 25;
+      }
+      return false;
+    });
+    res.json({ success: true, data: filteredTasks });
   } catch (error) {
     next(error);
   }
@@ -345,7 +396,10 @@ router.post(
       const task = await prisma.$transaction(async (transaction) => {
         const taskId = routeParam(req.params.id);
         const current = taskId
-          ? await transaction.deliveryTask.findUnique({ where: { id: taskId } })
+          ? await transaction.deliveryTask.findUnique({
+              where: { id: taskId },
+              include: { order: { include: { address: true, restaurant: true } } },
+            })
           : null;
         if (
           !current ||
@@ -353,6 +407,18 @@ router.post(
           current.riderId
         )
           return null;
+        const riderCity = await getRiderCity(req.user!.id);
+        const deliveryCity =
+          current.order.address?.city?.trim() ||
+          current.order.restaurant.city?.trim() ||
+          "";
+        if (
+          riderCity &&
+          deliveryCity &&
+          !deliveryCity.toLowerCase().includes(riderCity.toLowerCase())
+        ) {
+          return null;
+        }
         await transaction.rider.update({
           where: { id: rider.id },
           data: { isAvailable: false },

@@ -368,6 +368,7 @@ router.patch(
 
       const order = await prisma.order.findFirst({
         where: { id: orderId, restaurant: { ownerId: req.user!.id } },
+        include: { restaurant: true, address: true },
       });
       if (!order) {
         res
@@ -400,8 +401,22 @@ router.patch(
         if (status === OrderStatus.CONFIRMED) {
           await transaction.deliveryTask.upsert({
             where: { orderId: order.id },
-            update: { status: DeliveryTaskStatus.SEARCHING_RIDER, riderId: null },
-            create: { orderId: order.id, status: DeliveryTaskStatus.SEARCHING_RIDER },
+            update: {
+              status: DeliveryTaskStatus.SEARCHING_RIDER,
+              riderId: null,
+              pickupLatitude: order.restaurant.latitude,
+              pickupLongitude: order.restaurant.longitude,
+              deliveryLatitude: order.address?.latitude,
+              deliveryLongitude: order.address?.longitude,
+            },
+            create: {
+              orderId: order.id,
+              status: DeliveryTaskStatus.SEARCHING_RIDER,
+              pickupLatitude: order.restaurant.latitude,
+              pickupLongitude: order.restaurant.longitude,
+              deliveryLatitude: order.address?.latitude,
+              deliveryLongitude: order.address?.longitude,
+            },
           });
         }
 

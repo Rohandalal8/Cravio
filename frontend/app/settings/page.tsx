@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Bike, BriefcaseBusiness, LoaderCircle, RefreshCw } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context";
 import { fetchApplicationStatus, type ApplicationSummary } from "@/lib/applications";
+import { deleteAddress, fetchAddresses, saveAddress, type Address } from "@/lib/addresses";
+import { setSelectedLocation } from "@/lib/location";
 
 const restaurantPortalUrl = process.env.NEXT_PUBLIC_RESTAURANT_APP_URL ?? "http://localhost:3001";
 const riderPortalUrl = process.env.NEXT_PUBLIC_RIDER_APP_URL ?? "http://localhost:3002";
@@ -70,13 +73,44 @@ function PartnerCard({
 }
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, firebaseUser, loading: authLoading } = useAuth();
   const status = useQuery({
     queryKey: ["application-status", user?.id],
     queryFn: fetchApplicationStatus,
     enabled: Boolean(user) && !authLoading,
     retry: 1,
   });
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressLoading, setAddressLoading] = useState(true);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    label: "Home",
+    fullAddress: "",
+    city: "",
+    state: "",
+    pincode: "",
+  });
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    let active = true;
+    void (async () => {
+      try {
+        setAddressLoading(true);
+        const token = await firebaseUser.getIdToken();
+        const response = await fetchAddresses(token);
+        if (active) setAddresses(response.data);
+      } catch (error) {
+        if (active) setAddressError(error instanceof Error ? error.message : "Unable to load addresses.");
+      } finally {
+        if (active) setAddressLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [firebaseUser]);
 
   if (authLoading) {
     return <main className="flex min-h-[70vh] items-center justify-center bg-[#f7f4ee] text-[#81786c]"><LoaderCircle className="mr-2 animate-spin" size={20} /> Checking your account...</main>;
@@ -96,12 +130,99 @@ export default function SettingsPage() {
   const roles = new Set([role]);
   const isRider = role === "RIDER";
   const isRestaurantOwner = role === "RESTAURANT_OWNER";
+  const reloadAddresses = async () => {
+    if (!firebaseUser) return;
+    const token = await firebaseUser.getIdToken();
+    setAddresses((await fetchAddresses(token)).data);
+  };
+  const addAddress = async () => {
+    if (!firebaseUser) return;
+    if (!addressForm.fullAddress.trim() || !addressForm.city.trim() || !addressForm.state.trim() || !addressForm.pincode.trim()) {
+      setAddressError("Complete address details are required.");
+      return;
+    }
+    try {
+      const token = await firebaseUser.getIdToken();
+      await saveAddress(token, addressForm);
+      setAddressForm({ label: "Home", fullAddress: "", city: "", state: "", pincode: "" });
+      setShowAddressForm(false);
+      setAddressError(null);
+      await reloadAddresses();
+    } catch (error) {
+      setAddressError(error instanceof Error ? error.message : "Unable to save address.");
+    }
+  };
+  const selectAddress = async (address: Address) => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      await saveAddress(token, { ...address, isDefault: true }, address.id);
+      setSelectedLocation({ ...address, addressId: address.id });
+      await reloadAddresses();
+    } catch (error) {
+      setAddressError(error instanceof Error ? error.message : "Unable to select address.");
+    }
+  };
+  const removeAddress = async (address: Address) => {
+    if (!firebaseUser) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      await deleteAddress(token, address.id);
+      await reloadAddresses();
+    } catch (error) {
+      setAddressError(error instanceof Error ? error.message : "Unable to delete address.");
+    }
+  };
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-10 text-[#28241f] sm:px-8 lg:px-12">
       <div className="mx-auto max-w-[1200px]">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#d97732]">Your account</p>
         <h1 className="mt-3 font-serif text-5xl tracking-[-0.04em]">Settings</h1>
         <p className="mt-4 max-w-2xl leading-7 text-[#6f675d]">Manage your Cravio profile and choose how you would like to partner with us.</p>
+        <section className="mt-10 rounded-[1.75rem] border border-[#e8e0d4] bg-[#fffdf9] p-6 shadow-[0_14px_40px_rgba(40,36,31,0.05)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d97732]">Saved locations</p>
+              <h2 className="mt-2 font-serif text-3xl">Delivery addresses</h2>
+            </div>
+            <button type="button" onClick={() => setShowAddressForm((value) => !value)} className="rounded-full bg-[#273b32] px-4 py-2.5 text-sm font-bold text-white">Add address</button>
+          </div>
+
+          {addressLoading ? <p className="mt-5 text-sm text-[#81786c]">Loading addresses...</p> : null}
+          <div className="mt-5 grid gap-3">
+            {addresses.map((address) => (
+              <div key={address.id} className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${address.isDefault ? "border-[#d97732] bg-[#fff8ef]" : "border-[#eadfcf] bg-white"}`}>
+                <div>
+                  <p className="font-bold text-[#3d3830]">{address.label}{address.isDefault ? " - Default" : ""}</p>
+                  <p className="mt-1 text-sm leading-6 text-[#81786c]">{address.fullAddress}, {address.city}, {address.state} {address.pincode}</p>
+                </div>
+                <div className="flex gap-2">
+                  {!address.isDefault ? <button type="button" onClick={() => void selectAddress(address)} className="rounded-full border border-[#d97732] px-3 py-2 text-xs font-bold text-[#b86123]">Use this</button> : null}
+                  <button type="button" onClick={() => void removeAddress(address)} className="rounded-full border border-[#eadfcf] px-3 py-2 text-xs font-bold text-[#81786c]">Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {showAddressForm ? (
+            <div className="mt-5 grid gap-3 rounded-2xl border border-[#eadfcf] bg-white p-4 sm:grid-cols-2">
+              {[
+                ["label", "Label", "Home"],
+                ["fullAddress", "Full address", "House / area / landmark"],
+                ["city", "City", "City"],
+                ["state", "State", "State"],
+                ["pincode", "Pincode", "Pincode"],
+              ].map(([field, title, placeholder]) => (
+                <label key={field} className={field === "fullAddress" ? "sm:col-span-2" : ""}>
+                  <span className="mb-1.5 block text-xs font-bold text-[#665d55]">{title}</span>
+                  <input value={addressForm[field as keyof typeof addressForm]} onChange={(event) => setAddressForm((current) => ({ ...current, [field]: event.target.value }))} placeholder={placeholder} className="w-full rounded-xl border border-[#ded7cb] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
+                </label>
+              ))}
+              <button type="button" onClick={() => void addAddress()} className="sm:col-span-2 rounded-xl bg-[#8b1e3f] px-5 py-3 text-sm font-bold text-white">Save address</button>
+            </div>
+          ) : null}
+          {addressError ? <p className="mt-4 rounded-xl bg-[#fff1ed] p-3 text-sm text-[#a54e32]">{addressError}</p> : null}
+        </section>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           {!isRider ? <PartnerCard kind="restaurant" title="Restaurant Partner" description="List your restaurant, manage your menu, and receive orders from Cravio customers." href="/apply/owner" portalUrl={restaurantPortalUrl} application={data.ownerApplication} approved={roles.has("RESTAURANT_OWNER")} /> : null}
           {!isRestaurantOwner ? <PartnerCard kind="rider" title="Delivery Partner" description="Earn by delivering orders to Cravio customers with a flexible delivery workspace." href="/apply/rider" portalUrl={riderPortalUrl} application={data.riderApplication} approved={roles.has("RIDER")} /> : null}

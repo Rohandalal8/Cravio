@@ -14,6 +14,7 @@ type CreateOrderInput = {
   userId: string;
   items: CheckoutItem[];
   address: string;
+  addressId?: string;
   couponCode?: string;
 };
 
@@ -106,16 +107,29 @@ export async function createOrder(input: CreateOrderInput) {
     const discount = appliedCoupon?.discount ?? 0;
     const tax = Math.round((subtotal - discount) * 0.05 * 100) / 100;
     const total = Math.max(0, subtotal - discount + deliveryFee + tax);
-    const address = await transaction.address.create({
-      data: {
-        userId: input.userId,
-        label: "Checkout address",
-        fullAddress: input.address.trim(),
-        city: restaurant.city ?? "Unknown",
-        state: restaurant.state ?? "Unknown",
-        pincode: restaurant.pincode ?? "000000",
-      },
-    });
+    let address;
+    if (input.addressId) {
+      address = await transaction.address.findFirst({
+        where: { id: input.addressId, userId: input.userId },
+      });
+      if (!address) {
+        throw Object.assign(new Error("The selected delivery address is not valid."), {
+          statusCode: 400,
+          code: "ADDRESS_NOT_FOUND",
+        });
+      }
+    } else {
+      address = await transaction.address.create({
+        data: {
+          userId: input.userId,
+          label: "Checkout address",
+          fullAddress: input.address.trim(),
+          city: restaurant.city ?? "Unknown",
+          state: restaurant.state ?? "Unknown",
+          pincode: restaurant.pincode ?? "000000",
+        },
+      });
+    }
 
     const order = await transaction.order.create({
       data: {

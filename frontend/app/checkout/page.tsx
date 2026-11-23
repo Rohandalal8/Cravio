@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
+import { fetchAddresses, type Address } from "@/lib/addresses";
+import { getSelectedLocation, setSelectedLocation } from "@/lib/location";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -66,7 +68,9 @@ function CheckoutPageContent() {
   const { items, subtotal, deliveryFee, clearCart } = useCart();
   const { firebaseUser } = useAuth();
   const [customerName, setCustomerName] = useState("Guest user");
-  const [address, setAddress] = useState("12 Garden Avenue, Bengaluru");
+  const [address, setAddress] = useState("");
+  const [addressId, setAddressId] = useState<string | undefined>();
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -80,6 +84,43 @@ function CheckoutPageContent() {
   const discountedSubtotal = Math.max(0, subtotal - (appliedCoupon?.discount ?? 0));
   const estimatedTax = Math.round(discountedSubtotal * 0.05 * 100) / 100;
   const estimatedTotal = discountedSubtotal + deliveryFee + estimatedTax;
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    let active = true;
+    void (async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const response = await fetchAddresses(token);
+        if (!active) return;
+        setAddresses(response.data);
+        const selected = getSelectedLocation();
+        const defaultAddress =
+          response.data.find((item) => item.id === selected?.addressId) ??
+          response.data.find((item) => item.isDefault) ??
+          response.data[0];
+        if (defaultAddress) {
+          setAddressId(defaultAddress.id);
+          setAddress(defaultAddress.fullAddress);
+          setSelectedLocation({
+            addressId: defaultAddress.id,
+            label: defaultAddress.label,
+            fullAddress: defaultAddress.fullAddress,
+            city: defaultAddress.city,
+            state: defaultAddress.state,
+            pincode: defaultAddress.pincode,
+            latitude: defaultAddress.latitude,
+            longitude: defaultAddress.longitude,
+          });
+        }
+      } catch (loadError) {
+        console.error("Failed to load checkout addresses:", loadError);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [firebaseUser]);
 
   useEffect(() => {
     if (!orderId || !firebaseUser) return;
@@ -133,7 +174,7 @@ function CheckoutPageContent() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/coupon/validate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `****** firebaseUser.getIdToken()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await firebaseUser.getIdToken()}` },
         body: JSON.stringify({ code: couponCode, subtotal }),
       });
       const payload = await response.json();
@@ -183,6 +224,7 @@ function CheckoutPageContent() {
         body: JSON.stringify({
           items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
           address,
+          addressId,
           couponCode: appliedCoupon?.code,
         }),
       });
@@ -324,7 +366,36 @@ function CheckoutPageContent() {
 
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-[#4e493f]">Delivery address</span>
-              <textarea value={address} onChange={(event) => setAddress(event.target.value)} rows={4} className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
+              {addresses.length > 0 ? (
+                <select
+                  value={addressId ?? ""}
+                  onChange={(event) => {
+                    const selected = addresses.find((item) => item.id === event.target.value);
+                    if (!selected) return;
+                    setAddressId(selected.id);
+                    setAddress(selected.fullAddress);
+                    setSelectedLocation({
+                      addressId: selected.id,
+                      label: selected.label,
+                      fullAddress: selected.fullAddress,
+                      city: selected.city,
+                      state: selected.state,
+                      pincode: selected.pincode,
+                      latitude: selected.latitude,
+                      longitude: selected.longitude,
+                    });
+                  }}
+                  className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]"
+                >
+                  {addresses.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label} - {item.fullAddress}, {item.city}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <textarea value={address} onChange={(event) => setAddress(event.target.value)} rows={4} className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
+              )}
             </label>
           </div>
         </section>

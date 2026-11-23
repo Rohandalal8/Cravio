@@ -5,7 +5,30 @@ export type RestaurantQuery = {
   cuisine?: string;
   rating?: number;
   vegOnly?: boolean;
+  city?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusKm?: number;
 };
+
+function distanceKm(
+  latitude1: number,
+  longitude1: number,
+  latitude2: number,
+  longitude2: number,
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(latitude2 - latitude1);
+  const dLon = toRadians(longitude2 - longitude1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(latitude1)) *
+      Math.cos(toRadians(latitude2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function toRestaurantSummary(restaurant: {
   id: string;
@@ -22,6 +45,8 @@ function toRestaurantSummary(restaurant: {
   isOpen: boolean;
   isActive: boolean;
   minimumOrder: number;
+  latitude: number | null;
+  longitude: number | null;
   menuItems?: { isVeg: boolean }[];
 }) {
   const cuisine = restaurant.cuisines[0]?.cuisine.name ?? "Local favourites";
@@ -49,6 +74,10 @@ export async function listRestaurants(query: RestaurantQuery = {}) {
   const cuisine = (query.cuisine ?? "").trim();
   const rating = Number(query.rating ?? 0);
   const vegOnly = Boolean(query.vegOnly);
+  const city = (query.city ?? "").trim();
+  const latitude = Number.isFinite(query.latitude) ? query.latitude : undefined;
+  const longitude = Number.isFinite(query.longitude) ? query.longitude : undefined;
+  const radiusKm = Number.isFinite(query.radiusKm) ? Math.max(1, query.radiusKm ?? 25) : 25;
 
   const restaurants = await prisma.restaurant.findMany({
     where: {
@@ -67,7 +96,16 @@ export async function listRestaurants(query: RestaurantQuery = {}) {
     orderBy: [{ rating: "desc" }, { name: "asc" }],
   });
 
-  return restaurants.map(toRestaurantSummary);
+  const filtered = restaurants.filter((restaurant) => {
+    if (!city && (latitude === undefined || longitude === undefined)) return true;
+    if (city && restaurant.city?.toLowerCase().includes(city.toLowerCase())) return true;
+    if (latitude !== undefined && longitude !== undefined && restaurant.latitude !== null && restaurant.longitude !== null) {
+      return distanceKm(latitude, longitude, restaurant.latitude, restaurant.longitude) <= radiusKm;
+    }
+    return false;
+  });
+
+  return filtered.map(toRestaurantSummary);
 }
 
 export async function getRestaurantBySlug(slug: string) {

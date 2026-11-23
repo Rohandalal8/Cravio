@@ -88,8 +88,12 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
       typeof req.body?.couponCode === "string"
         ? req.body.couponCode
         : undefined;
+    const addressId =
+      typeof req.body?.addressId === "string"
+        ? req.body.addressId.trim()
+        : undefined;
 
-    if (!address) {
+    if (!addressId && !address) {
       res
         .status(400)
         .json({
@@ -105,6 +109,7 @@ router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
       userId: req.user!.id,
       items,
       address,
+      addressId,
       couponCode,
     });
 
@@ -148,8 +153,12 @@ router.post(
         typeof req.body?.couponCode === "string"
           ? req.body.couponCode
           : undefined;
+        const addressId =
+          typeof req.body?.addressId === "string"
+            ? req.body.addressId.trim()
+            : undefined;
 
-      if (!address) {
+        if (!addressId && !address) {
         res.status(400).json({
           success: false,
           message: "A delivery address is required.",
@@ -162,6 +171,7 @@ router.post(
         userId: req.user!.id,
         items,
         address,
+        addressId,
         couponCode,
       });
 

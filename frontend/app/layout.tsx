@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 
 import { Navbar } from "@/components/navbar";
 import { Providers } from "./providers";
+import { LocationPrompt } from "@/components/location-prompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <Providers>
           <Navbar />
+          <LocationPrompt />
           {children}
         </Providers>
       </body>

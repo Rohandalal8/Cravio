@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { RestaurantCard } from "@/components/restaurant-card";
 import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
+import { getSelectedLocation, type SelectedLocation } from "@/lib/location";
 
 const categories = ["Pizza", "Biryani", "Chinese", "Cafe", "Healthy", "Desserts"];
 
@@ -12,13 +13,19 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedLocation, setLocation] = useState<SelectedLocation | null>(() => getSelectedLocation());
 
   useEffect(() => {
     let active = true;
 
     const loadRestaurants = async () => {
       try {
-        const response = await fetchRestaurants();
+        const response = await fetchRestaurants({
+          city: selectedLocation?.city,
+          latitude: selectedLocation?.latitude ?? undefined,
+          longitude: selectedLocation?.longitude ?? undefined,
+          radiusKm: 25,
+        });
         if (active) {
           setRestaurants(response.data ?? []);
         }
@@ -35,6 +42,11 @@ export default function HomePage() {
     return () => {
       active = false;
     };
+  }, [selectedLocation]);
+  useEffect(() => {
+    const updateLocation = () => setLocation(getSelectedLocation());
+    window.addEventListener("cravio-location-change", updateLocation);
+    return () => window.removeEventListener("cravio-location-change", updateLocation);
   }, []);
 
   return (

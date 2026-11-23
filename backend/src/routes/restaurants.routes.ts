@@ -19,6 +19,19 @@ router.get("/restaurants", async (req, res, next) => {
           ? Number(req.query.rating)
           : undefined,
       vegOnly: req.query.veg === "true",
+      city: typeof req.query.city === "string" ? req.query.city : undefined,
+      latitude:
+        typeof req.query.latitude === "string"
+          ? Number(req.query.latitude)
+          : undefined,
+      longitude:
+        typeof req.query.longitude === "string"
+          ? Number(req.query.longitude)
+          : undefined,
+      radiusKm:
+        typeof req.query.radiusKm === "string"
+          ? Number(req.query.radiusKm)
+          : undefined,
     });
 
     res.status(200).json({ success: true, data: restaurants });

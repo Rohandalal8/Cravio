@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 import { RestaurantCard } from "@/components/restaurant-card";
 import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
+import { getSelectedLocation, type SelectedLocation } from "@/lib/location";
 
 const cuisines = ["all", "North Indian", "Chinese", "Cafe", "Pizza", "Biryani", "Healthy"];
 
@@ -16,6 +17,13 @@ function RestaurantsPageContent() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLocation, setLocation] = useState<SelectedLocation | null>(() => getSelectedLocation());
+
+  useEffect(() => {
+    const updateLocation = () => setLocation(getSelectedLocation());
+    window.addEventListener("cravio-location-change", updateLocation);
+    return () => window.removeEventListener("cravio-location-change", updateLocation);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -29,6 +37,10 @@ function RestaurantsPageContent() {
           search,
           cuisine: cuisine === "all" ? undefined : cuisine,
           veg: vegOnly,
+          city: selectedLocation?.city,
+          latitude: selectedLocation?.latitude ?? undefined,
+          longitude: selectedLocation?.longitude ?? undefined,
+          radiusKm: 25,
         });
 
         if (active) {
@@ -47,7 +59,7 @@ function RestaurantsPageContent() {
     return () => {
       active = false;
     };
-  }, [search, cuisine, vegOnly]);
+  }, [search, cuisine, vegOnly, selectedLocation]);
 
   return (
     <main className="min-h-screen bg-[#fff8f1] text-[#252126]">
