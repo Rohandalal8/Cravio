@@ -68,6 +68,7 @@ function CheckoutPageContent() {
   const { items, subtotal, deliveryFee, clearCart } = useCart();
   const { firebaseUser } = useAuth();
   const [customerName, setCustomerName] = useState("Guest user");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [address, setAddress] = useState("");
   const [addressId, setAddressId] = useState<string | undefined>();
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -213,6 +214,14 @@ function CheckoutPageContent() {
       if (!firebaseUser) {
         throw new Error("Please sign in before placing an order.");
       }
+      const normalizedMobileNumber = (mobileNumber || firebaseUser.phoneNumber || "").replace(/\D/g, "");
+      const mobileDigits =
+        normalizedMobileNumber.length === 12 && normalizedMobileNumber.startsWith("91")
+          ? normalizedMobileNumber.slice(2)
+          : normalizedMobileNumber;
+      if (!/^[6-9]\d{9}$/.test(mobileDigits)) {
+        throw new Error("Enter a valid 10-digit mobile number.");
+      }
 
       const token = await firebaseUser.getIdToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/payment/order`, {
@@ -253,7 +262,7 @@ function CheckoutPageContent() {
           prefill: {
             name: customerName,
             email: firebaseUser.email ?? undefined,
-            contact: firebaseUser.phoneNumber ?? undefined,
+            contact: mobileDigits,
           },
           theme: { color: "#8b1e3f" },
           handler: async (payment) => {
@@ -362,6 +371,19 @@ function CheckoutPageContent() {
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-[#4e493f]">Name</span>
               <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-[#4e493f]">Mobile number</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                value={mobileNumber || firebaseUser?.phoneNumber || ""}
+                onChange={(event) => setMobileNumber(event.target.value)}
+                placeholder="10-digit mobile number"
+                className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]"
+              />
             </label>
 
             <label className="block">
