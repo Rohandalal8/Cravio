@@ -37,6 +37,9 @@ router.get("/dashboard", requireAuth, requireAdmin, async (_req, res, next) => {
       recentOrders,
       recentUsers,
       orderGroups,
+      restaurantRevenue,
+      riderEarnings,
+      platformCharges,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.restaurant.count(),
@@ -71,6 +74,23 @@ router.get("/dashboard", requireAuth, requireAdmin, async (_req, res, next) => {
         },
       }),
       prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.order.aggregate({
+        where: {
+          paymentStatus: PaymentStatus.PAID,
+          status: { not: OrderStatus.CANCELLED },
+        },
+        _sum: { subtotal: true },
+      }),
+      prisma.riderEarning.aggregate({
+        _sum: { amount: true },
+      }),
+      prisma.order.aggregate({
+        where: {
+          paymentStatus: PaymentStatus.PAID,
+          status: { not: OrderStatus.CANCELLED },
+        },
+        _sum: { deliveryFee: true, tax: true },
+      }),
     ]);
     return res.json({
       success: true,
@@ -86,6 +106,15 @@ router.get("/dashboard", requireAuth, requireAdmin, async (_req, res, next) => {
         recentOrders,
         recentUsers,
         orderStatus: orderGroups,
+        settlement: {
+          restaurantRevenue: restaurantRevenue._sum.subtotal ?? 0,
+          riderEarnings: riderEarnings._sum.amount ?? 0,
+          platformCharges:
+            (platformCharges._sum.deliveryFee ?? 0) +
+            (platformCharges._sum.tax ?? 0),
+          deliveryFees: platformCharges._sum.deliveryFee ?? 0,
+          tax: platformCharges._sum.tax ?? 0,
+        },
       },
     });
   } catch (error) {

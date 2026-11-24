@@ -17,6 +17,7 @@ type Order = {
   id: string;
   status: string;
   total: number;
+  subtotal: number;
   items: { name: string; quantity: number }[];
 };
 type Profile = {
@@ -41,6 +42,9 @@ type Review = {
 type Analytics = {
   orders: number;
   revenue: number;
+  discount: number;
+  deliveryRevenue: number;
+  taxRevenue: number;
   rating: number;
   reviewCount: number;
   popularItems: { name: string; _sum: { quantity: number | null } }[];
@@ -207,7 +211,7 @@ function WorkspaceContent({
               <span className={`badge ${order.status.toLowerCase()}`}>
                 {order.status}
               </span>
-              <span>₹{order.total.toFixed(2)}</span>
+              <span title="Food subtotal">₹{order.subtotal.toFixed(2)}</span>
               <a className="pill" href={`/orders/${order.id}`}>
                 Details
               </a>
@@ -344,8 +348,9 @@ function WorkspaceContent({
           <div className="value">{analytics.orders}</div>
         </div>
         <div className="card">
-          <strong>Revenue</strong>
+          <strong>Food revenue</strong>
           <div className="value">₹{analytics.revenue.toFixed(2)}</div>
+          <small>Paid food subtotal only</small>
         </div>
         <div className="card">
           <strong>Guest rating</strong>

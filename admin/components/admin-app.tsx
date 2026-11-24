@@ -54,6 +54,13 @@ type Admin = {
   status: "ACTIVE" | "SUSPENDED";
 };
 type Dashboard = {
+  settlement?: {
+    restaurantRevenue: number;
+    riderEarnings: number;
+    platformCharges: number;
+    deliveryFees: number;
+    tax: number;
+  };
   counts: {
     users: number;
     restaurants: number;
@@ -194,7 +201,7 @@ function StatCard({
   accent,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   accent: string;
 }) {
   return (
@@ -459,6 +466,21 @@ function DashboardView({
           label="Pending applications"
           value={data.counts.pendingApplications}
           accent="yellow"
+        />
+        <StatCard
+          label="Restaurant food revenue"
+          value={`₹${(data.settlement?.restaurantRevenue ?? 0).toLocaleString("en-IN")}`}
+          accent="orange"
+        />
+        <StatCard
+          label="Rider earnings"
+          value={`₹${(data.settlement?.riderEarnings ?? 0).toLocaleString("en-IN")}`}
+          accent="green"
+        />
+        <StatCard
+          label="Platform extra charges"
+          value={`₹${(data.settlement?.platformCharges ?? 0).toLocaleString("en-IN")}`}
+          accent="purple"
         />
       </div>
       <div className="dashboard-grid">

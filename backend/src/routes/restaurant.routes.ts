@@ -211,14 +211,29 @@ router.get(
           });
         return;
       }
-      const [orders, revenue, popularItems] = await Promise.all([
-        prisma.order.count({ where: { restaurantId: restaurant.id } }),
+      const [orders, revenue, extraCharges, popularItems] = await Promise.all([
+        prisma.order.count({
+          where: {
+            restaurantId: restaurant.id,
+            paymentStatus: "PAID",
+            status: { not: OrderStatus.CANCELLED },
+          },
+        }),
         prisma.order.aggregate({
           where: {
             restaurantId: restaurant.id,
+            paymentStatus: "PAID",
             status: { not: OrderStatus.CANCELLED },
           },
-          _sum: { total: true },
+          _sum: { subtotal: true, discount: true },
+        }),
+        prisma.order.aggregate({
+          where: {
+            restaurantId: restaurant.id,
+            paymentStatus: "PAID",
+            status: { not: OrderStatus.CANCELLED },
+          },
+          _sum: { deliveryFee: true, tax: true },
         }),
         prisma.orderItem.groupBy({
           by: ["menuItemId", "name"],
@@ -234,7 +249,10 @@ router.get(
           success: true,
           data: {
             orders,
-            revenue: revenue._sum.total ?? 0,
+            revenue: revenue._sum.subtotal ?? 0,
+            discount: revenue._sum.discount ?? 0,
+            deliveryRevenue: extraCharges._sum.deliveryFee ?? 0,
+            taxRevenue: extraCharges._sum.tax ?? 0,
             rating: restaurant.rating,
             reviewCount: restaurant.reviewCount,
             popularItems,
