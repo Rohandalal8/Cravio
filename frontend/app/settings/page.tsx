@@ -84,6 +84,7 @@ export default function SettingsPage() {
   const [addressLoading, setAddressLoading] = useState(true);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressActionId, setAddressActionId] = useState<string | null>(null);
   const [addressForm, setAddressForm] = useState({
     label: "Home",
     fullAddress: "",
@@ -154,23 +155,35 @@ export default function SettingsPage() {
   };
   const selectAddress = async (address: Address) => {
     if (!firebaseUser) return;
+    const previousAddresses = addresses;
+    setAddressError(null);
+    setAddressActionId(address.id);
+    setAddresses((current) =>
+      current.map((item) => ({ ...item, isDefault: item.id === address.id })),
+    );
     try {
       const token = await firebaseUser.getIdToken();
       await saveAddress(token, { ...address, isDefault: true }, address.id);
       setSelectedLocation({ ...address, addressId: address.id });
       await reloadAddresses();
     } catch (error) {
+      setAddresses(previousAddresses);
       setAddressError(error instanceof Error ? error.message : "Unable to select address.");
+    } finally {
+      setAddressActionId(null);
     }
   };
   const removeAddress = async (address: Address) => {
     if (!firebaseUser) return;
+    setAddressActionId(address.id);
     try {
       const token = await firebaseUser.getIdToken();
       await deleteAddress(token, address.id);
       await reloadAddresses();
     } catch (error) {
       setAddressError(error instanceof Error ? error.message : "Unable to delete address.");
+    } finally {
+      setAddressActionId(null);
     }
   };
   return (
@@ -185,7 +198,7 @@ export default function SettingsPage() {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d97732]">Saved locations</p>
               <h2 className="mt-2 font-serif text-3xl">Delivery addresses</h2>
             </div>
-            <button type="button" onClick={() => setShowAddressForm((value) => !value)} className="rounded-full bg-[#273b32] px-4 py-2.5 text-sm font-bold text-white">Add address</button>
+            <button type="button" onClick={() => setShowAddressForm((value) => !value)} className="cursor-pointer rounded-full bg-[#273b32] px-4 py-2.5 text-sm font-bold text-white">Add address</button>
           </div>
 
           {addressLoading ? <p className="mt-5 text-sm text-[#81786c]">Loading addresses...</p> : null}
@@ -197,8 +210,8 @@ export default function SettingsPage() {
                   <p className="mt-1 text-sm leading-6 text-[#81786c]">{address.fullAddress}, {address.city}, {address.state} {address.pincode}</p>
                 </div>
                 <div className="flex gap-2">
-                  {!address.isDefault ? <button type="button" onClick={() => void selectAddress(address)} className="rounded-full border border-[#d97732] px-3 py-2 text-xs font-bold text-[#b86123]">Use this</button> : null}
-                  <button type="button" onClick={() => void removeAddress(address)} className="rounded-full border border-[#eadfcf] px-3 py-2 text-xs font-bold text-[#81786c]">Delete</button>
+                  {!address.isDefault ? <button type="button" disabled={addressActionId !== null} onClick={() => void selectAddress(address)} className="cursor-pointer rounded-full border border-[#d97732] px-3 py-2 text-xs font-bold text-[#b86123] disabled:cursor-wait disabled:opacity-60">{addressActionId === address.id ? "Setting..." : "Use this"}</button> : <span className="rounded-full bg-[#fff0d9] px-3 py-2 text-xs font-bold text-[#b86123]">Default</span>}
+                  <button type="button" disabled={addressActionId !== null} onClick={() => void removeAddress(address)} className="cursor-pointer rounded-full border border-[#eadfcf] px-3 py-2 text-xs font-bold text-[#81786c] disabled:cursor-wait disabled:opacity-60">Delete</button>
                 </div>
               </div>
             ))}
@@ -218,7 +231,7 @@ export default function SettingsPage() {
                   <input value={addressForm[field as keyof typeof addressForm]} onChange={(event) => setAddressForm((current) => ({ ...current, [field]: event.target.value }))} placeholder={placeholder} className="w-full rounded-xl border border-[#ded7cb] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
                 </label>
               ))}
-              <button type="button" onClick={() => void addAddress()} className="sm:col-span-2 rounded-xl bg-[#8b1e3f] px-5 py-3 text-sm font-bold text-white">Save address</button>
+              <button type="button" onClick={() => void addAddress()} className="sm:col-span-2 cursor-pointer rounded-xl bg-[#8b1e3f] px-5 py-3 text-sm font-bold text-white">Save address</button>
             </div>
           ) : null}
           {addressError ? <p className="mt-4 rounded-xl bg-[#fff1ed] p-3 text-sm text-[#a54e32]">{addressError}</p> : null}
