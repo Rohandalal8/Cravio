@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { fetchAddresses, type Address } from "@/lib/addresses";
 import { getSelectedLocation, setSelectedLocation } from "@/lib/location";
+import { getApiBaseUrl } from "@/lib/api";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -132,7 +133,7 @@ function CheckoutPageContent() {
       try {
         const token = await firebaseUser.getIdToken();
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/${orderId}`,
+          `${getApiBaseUrl()}/orders/${orderId}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const payload = (await response.json().catch(() => null)) as {
@@ -174,7 +175,7 @@ function CheckoutPageContent() {
     setIsApplyingCoupon(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/coupon/validate`, {
+      const response = await fetch(`${getApiBaseUrl()}/orders/coupon/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${await firebaseUser.getIdToken()}` },
         body: JSON.stringify({ code: couponCode, subtotal }),
@@ -225,7 +226,7 @@ function CheckoutPageContent() {
       }
 
       const token = await firebaseUser.getIdToken();
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/payment/order`, {
+      const response = await fetch(`${getApiBaseUrl()}/orders/payment/order`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -268,7 +269,7 @@ function CheckoutPageContent() {
           theme: { color: "#8b1e3f" },
           handler: async (payment) => {
             try {
-              const verificationResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders/payment/verify`, {
+              const verificationResponse = await fetch(`${getApiBaseUrl()}/orders/payment/verify`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

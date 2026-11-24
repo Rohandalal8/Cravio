@@ -3,7 +3,26 @@ import type { User as FirebaseUser } from "firebase/auth";
 const DEFAULT_API_URL = "http://localhost:5000/api";
 
 export function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
+  const configured = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
+  const normalized = configured
+    .replace(/\/+$/, "")
+    .replace(/^http:\/\/(?!localhost(?:[/:]|$)|127\.0\.0\.1(?:[/:]|$))/i, "https://")
+    .replace("https://cravio-api.vercel.app/api", "https://cravioo-api.vercel.app/api");
+
+  if (
+    typeof window !== "undefined" &&
+    !["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ) {
+    if (
+      normalized.includes("localhost") ||
+      normalized.includes("127.0.0.1") ||
+      normalized.includes("cravio-api.vercel.app")
+    ) {
+      return "https://cravioo-api.vercel.app/api";
+    }
+  }
+
+  return normalized;
 }
 
 export async function syncFirebaseUser(firebaseUser: FirebaseUser, name?: string) {

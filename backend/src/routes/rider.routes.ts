@@ -208,6 +208,9 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
               city: application.city,
               state: application.state,
               pincode: application.pincode,
+              vehicleBrand: application.vehicleBrand,
+              vehicleModel: application.vehicleModel,
+              licenseNumber: application.licenseNumber,
             }
           : null,
         user: {
@@ -272,6 +275,9 @@ router.get("/profile", requireAuth, requireRider, async (req, res, next) => {
               city: application.city,
               state: application.state,
               pincode: application.pincode,
+              vehicleBrand: application.vehicleBrand,
+              vehicleModel: application.vehicleModel,
+              licenseNumber: application.licenseNumber,
             }
           : null,
         user: {
@@ -299,7 +305,15 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
       typeof req.body?.state === "string" ? req.body.state.trim() : undefined;
     const pincode =
       typeof req.body?.pincode === "string" ? req.body.pincode.trim() : undefined;
-    if (!name && !phone && !address && !city && !state && !pincode) {
+    const vehicleNumber =
+      typeof req.body?.vehicleNumber === "string" ? req.body.vehicleNumber.trim() : undefined;
+    const vehicleBrand =
+      typeof req.body?.vehicleBrand === "string" ? req.body.vehicleBrand.trim() : undefined;
+    const vehicleModel =
+      typeof req.body?.vehicleModel === "string" ? req.body.vehicleModel.trim() : undefined;
+    const licenseNumber =
+      typeof req.body?.licenseNumber === "string" ? req.body.licenseNumber.trim() : undefined;
+    if (!name && !phone && !address && !city && !state && !pincode && !vehicleNumber && !vehicleBrand && !vehicleModel && !licenseNumber) {
       res
         .status(400)
         .json({
@@ -373,6 +387,19 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
             ...(city ? { city } : {}),
             ...(state ? { state } : {}),
             ...(pincode ? { pincode } : {}),
+            ...(vehicleBrand ? { vehicleBrand } : {}),
+            ...(vehicleModel ? { vehicleModel } : {}),
+            ...(vehicleNumber ? { vehicleNumber } : {}),
+            ...(licenseNumber ? { licenseNumber } : {}),
+          },
+        });
+      }
+      if (vehicleNumber || licenseNumber) {
+        await transaction.rider.update({
+          where: { userId: req.user!.id },
+          data: {
+            ...(vehicleNumber ? { vehicleNumber } : {}),
+            ...(licenseNumber ? { licenseNumber } : {}),
           },
         });
       }
@@ -417,6 +444,9 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
               city: application.city,
               state: application.state,
               pincode: application.pincode,
+              vehicleBrand: application.vehicleBrand,
+              vehicleModel: application.vehicleModel,
+              licenseNumber: application.licenseNumber,
             }
           : null,
         user: {

@@ -6,14 +6,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/auth-context";
 import { auth } from "@/lib/firebase";
+import { getApiBaseUrl } from "@/lib/api";
 
 type Notification = { id: string; title: string; message: string; isRead: boolean; createdAt: string };
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
-
 async function notificationRequest<T>(path: string, options: RequestInit = {}) {
   if (!auth?.currentUser) throw new Error("Please sign in to view notifications.");
   const token = await auth.currentUser.getIdToken();
-  const response = await fetch(`${apiUrl}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers ?? {}) } });
+  const response = await fetch(`${getApiBaseUrl()}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers ?? {}) } });
   const payload = (await response.json().catch(() => null)) as { data?: T; message?: string } | null;
   if (!response.ok) throw new Error(payload?.message ?? "Unable to load notifications.");
   return payload?.data;

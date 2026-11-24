@@ -2,7 +2,7 @@ import { auth } from "./firebase";
 
 const configuredApiUrl =
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://cravio-api.vercel.app/api";
+  "https://cravioo-api.vercel.app/api";
 
 export const API_URL = configuredApiUrl
   .replace(/^http:\/\/(?!localhost(?:[/:]|$)|127\.0\.0\.1(?:[/:]|$))/i, "https://")

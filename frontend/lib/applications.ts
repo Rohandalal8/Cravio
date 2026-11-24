@@ -1,4 +1,5 @@
 import { auth } from "@/lib/firebase";
+import { getApiBaseUrl } from "@/lib/api";
 
 export type ApplicationState = "PENDING" | "APPROVED" | "REJECTED";
 export type PlatformRole = "CUSTOMER" | "RESTAURANT_OWNER" | "RIDER" | "ADMIN";
@@ -18,7 +19,7 @@ export type ApplicationStatus = {
   riderApplication: ApplicationSummary | null;
 };
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const apiUrl = getApiBaseUrl();
 
 export async function fetchApplicationStatus(): Promise<ApplicationStatus> {
   if (!auth?.currentUser) {

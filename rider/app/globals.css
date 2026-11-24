@@ -605,6 +605,105 @@ button {
 .profile-form input:disabled {
   background: #f2f4f2;
 }
+.profile-view-grid {
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+.profile-vehicle-card {
+  grid-column: 1 / -1;
+}
+.profile-edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 9px 16px;
+}
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.profile-details div {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.profile-details span,
+.profile-details strong {
+  display: block;
+}
+.profile-details span {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.profile-details strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.profile-detail-wide {
+  grid-column: 1 / -1;
+}
+.vehicle-details {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.profile-saved {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #edf8f0;
+}
+.muted-badge {
+  color: var(--muted) !important;
+  background: #f1f1ef;
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(24 20 22 / 48%);
+  backdrop-filter: blur(4px);
+}
+.profile-edit-modal {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 24px 70px rgb(37 33 38 / 24%);
+}
+.profile-edit-modal .profile-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.profile-modal-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+}
+.profile-modal-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+.profile-cancel-button {
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--text-primary);
+}
 .verified,
 .saved {
   color: #287046;
@@ -867,6 +966,21 @@ button {
   }
   .profile-grid {
     grid-template-columns: 1fr;
+  }
+  .profile-view-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-vehicle-card {
+    grid-column: auto;
+  }
+  .profile-details,
+  .vehicle-details,
+  .profile-edit-modal .profile-form {
+    grid-template-columns: 1fr;
+  }
+  .profile-detail-wide,
+  .profile-modal-actions {
+    grid-column: auto;
   }
   .login-page {
     display: block;
