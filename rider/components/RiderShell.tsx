@@ -36,6 +36,11 @@ export type Rider = {
   totalEarnings: number;
   vehicleType: string;
   vehicleNumber: string;
+  fullName: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
   user: {
     name: string | null;
     email: string | null;

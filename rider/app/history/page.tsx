@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import { Empty, Loading } from "@/components/PageState";
 type Item = {
   id: string;
+  status: string;
+  createdAt: string;
   deliveredAt: string | null;
   order: {
     id: string;
@@ -24,7 +26,7 @@ export default function HistoryPage() {
   return (
     <RiderShell>
       <div className="page-intro">
-        <p>A clear record of every delivery you have completed.</p>
+        <p>A clear record of completed and cancelled deliveries.</p>
         {error && <p className="form-error">{error}</p>}
       </div>
       {!items ? (
@@ -48,11 +50,12 @@ export default function HistoryPage() {
                 </small>
               </div>
               <div>
+                <span className={`badge ${item.status === "CANCELLED" ? "badge-orange" : ""}`}>
+                  {item.status.replaceAll("_", " ")}
+                </span>
                 <strong>₹{item.order.total.toFixed(0)}</strong>
                 <small>
-                  {item.deliveredAt
-                    ? new Date(item.deliveredAt).toLocaleDateString("en-IN")
-                    : ""}
+                  {new Date(item.deliveredAt ?? item.createdAt).toLocaleDateString("en-IN")}
                 </small>
               </div>
             </div>

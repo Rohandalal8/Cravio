@@ -7,31 +7,44 @@ export default function ProfilePage() {
   const [rider, setRider] = useState<Rider | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
     void api<Rider>("/rider/me")
       .then((value) => {
         setRider(value);
-        setName(value.user.name ?? "");
+        setName(value.fullName ?? value.user.name ?? "");
         setPhone(value.user.phone ?? "");
+        setAddress(value.address ?? "");
+        setCity(value.city ?? "");
+        setState(value.state ?? "");
+        setPincode(value.pincode ?? "");
       })
-      .catch(() => undefined);
+      .catch((cause: Error) => setError(cause.message));
   }, []);
   async function save(event: FormEvent) {
     event.preventDefault();
+    setError("");
+    setSaved(false);
     try {
       const updated = await api<Rider>("/rider/profile", {
         method: "PATCH",
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify({ name, phone, address, city, state, pincode }),
       });
-      setRider((current) =>
-        current
-          ? { ...current, user: { ...current.user, ...updated.user } }
-          : current,
-      );
+      setRider(updated);
+      setName(updated.fullName ?? updated.user.name ?? "");
+      setPhone(updated.user.phone ?? "");
+      setAddress(updated.address ?? "");
+      setCity(updated.city ?? "");
+      setState(updated.state ?? "");
+      setPincode(updated.pincode ?? "");
       setSaved(true);
-    } catch {
-      setSaved(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to save profile.");
     }
   }
   return (
@@ -77,6 +90,8 @@ export default function ProfilePage() {
                 Phone number
                 <input
                   value={phone}
+                  type="tel"
+                  inputMode="numeric"
                   onChange={(e) => setPhone(e.target.value)}
                   required
                 />
@@ -85,6 +100,37 @@ export default function ProfilePage() {
                 Email address
                 <input value={rider.user.email ?? ""} disabled />
               </label>
+              <label>
+                Address
+                <input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                City
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+              </label>
+              <label>
+                State
+                <input
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                />
+              </label>
+              <label>
+                Pincode
+                <input
+                  value={pincode}
+                  inputMode="numeric"
+                  onChange={(e) => setPincode(e.target.value)}
+                />
+              </label>
+              {error ? <p className="form-error">{error}</p> : null}
               <button className="button">Save changes</button>
             </form>
           </section>

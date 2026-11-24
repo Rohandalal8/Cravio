@@ -1,6 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+
+import { getSelectedLocation, type SelectedLocation } from "@/lib/location";
 
 export type CartItem = {
   id: string;
@@ -39,8 +41,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hasLoadedStoredCart, setHasLoadedStoredCart] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const previousLocation = useRef<SelectedLocation | null>(null);
 
   useEffect(() => {
+    previousLocation.current = getSelectedLocation();
     const storedCart = window.localStorage.getItem(CART_STORAGE_KEY);
 
     if (storedCart) {
@@ -52,6 +56,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
 
     setHasLoadedStoredCart(true);
+  }, []);
+
+  useEffect(() => {
+    const handleLocationChange = (event: Event) => {
+      const nextLocation = (event as CustomEvent<SelectedLocation>).detail;
+      const previous = previousLocation.current;
+      const locationChanged =
+        previous !== null &&
+        (previous.addressId !== nextLocation.addressId ||
+          previous.fullAddress !== nextLocation.fullAddress ||
+          previous.city !== nextLocation.city ||
+          previous.pincode !== nextLocation.pincode);
+
+      previousLocation.current = nextLocation;
+      if (locationChanged) {
+        setItems([]);
+        setIsCartOpen(false);
+      }
+    };
+
+    window.addEventListener("cravio-location-change", handleLocationChange);
+    return () => window.removeEventListener("cravio-location-change", handleLocationChange);
   }, []);
 
   useEffect(() => {

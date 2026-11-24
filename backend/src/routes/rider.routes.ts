@@ -170,6 +170,10 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
         createdAt: true,
       },
     });
+    const application = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: "APPROVED" },
+      orderBy: { updatedAt: "desc" },
+    });
     if (!rider) {
       res
         .status(404)
@@ -181,7 +185,18 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
         });
       return;
     }
-    res.json({ success: true, data: { ...rider, user } });
+    res.json({
+      success: true,
+      data: {
+        ...rider,
+        fullName: application?.fullName ?? user?.name ?? null,
+        address: application?.address ?? null,
+        city: application?.city ?? null,
+        state: application?.state ?? null,
+        pincode: application?.pincode ?? null,
+        user,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -193,21 +208,108 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
       typeof req.body?.name === "string" ? req.body.name.trim() : undefined;
     const phone =
       typeof req.body?.phone === "string" ? req.body.phone.trim() : undefined;
-    if (!name && !phone) {
+    const address =
+      typeof req.body?.address === "string" ? req.body.address.trim() : undefined;
+    const city =
+      typeof req.body?.city === "string" ? req.body.city.trim() : undefined;
+    const state =
+      typeof req.body?.state === "string" ? req.body.state.trim() : undefined;
+    const pincode =
+      typeof req.body?.pincode === "string" ? req.body.pincode.trim() : undefined;
+    if (!name && !phone && !address && !city && !state && !pincode) {
       res
         .status(400)
         .json({
           success: false,
-          message: "A name or phone number is required.",
+          message: "At least one profile field is required.",
           code: "INVALID_PROFILE",
         });
       return;
     }
-    const user = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: { ...(name ? { name } : {}), ...(phone ? { phone } : {}) },
+    if (name && name.length < 2) {
+      res.status(400).json({
+        success: false,
+        message: "Name must contain at least 2 characters.",
+        code: "INVALID_PROFILE",
+      });
+      return;
+    }
+    const normalizedPhone = phone
+      ? phone.replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "")
+      : "";
+    if (phone && !/^[6-9]\d{9}$/.test(normalizedPhone)) {
+      res.status(400).json({
+        success: false,
+        message: "Enter a valid 10-digit mobile number.",
+        code: "INVALID_PHONE",
+      });
+      return;
+    }
+    if ((address !== undefined && address.length < 5) ||
+      (pincode !== undefined && pincode.length < 4)) {
+      res.status(400).json({
+        success: false,
+        message: "Address and pincode must be valid.",
+        code: "INVALID_ADDRESS",
+      });
+      return;
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.user.update({
+        where: { id: req.user!.id },
+        data: {
+          ...(name ? { name } : {}),
+            ...(phone ? { phone: normalizedPhone } : {}),
+        },
+      });
+      const application = await transaction.riderApplication.findFirst({
+        where: { applicantId: req.user!.id, status: "APPROVED" },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (application) {
+        await transaction.riderApplication.update({
+          where: { id: application.id },
+          data: {
+            ...(name ? { fullName: name } : {}),
+            ...(phone ? { phone: normalizedPhone } : {}),
+            ...(address !== undefined ? { address } : {}),
+            ...(city !== undefined ? { city } : {}),
+            ...(state !== undefined ? { state } : {}),
+            ...(pincode !== undefined ? { pincode } : {}),
+          },
+        });
+      }
     });
-    res.json({ success: true, data: user });
+
+    const rider = await getRider(req.user!.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatar: true,
+        createdAt: true,
+      },
+    });
+    const application = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: "APPROVED" },
+      orderBy: { updatedAt: "desc" },
+    });
+    res.json({
+      success: true,
+      data: {
+        ...rider,
+        fullName: application?.fullName ?? user?.name ?? null,
+        address: application?.address ?? null,
+        city: application?.city ?? null,
+        state: application?.state ?? null,
+        pincode: application?.pincode ?? null,
+        user,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -311,7 +413,16 @@ router.get("/deliveries", requireAuth, requireRider, async (req, res, next) => {
     const tasks = await prisma.deliveryTask.findMany({
       where: {
         OR: [
-          { riderId: rider.id },
+          {
+            riderId: rider.id,
+            status: {
+              in: [
+                DeliveryTaskStatus.RIDER_ASSIGNED,
+                DeliveryTaskStatus.PICKED_UP,
+                DeliveryTaskStatus.OUT_FOR_DELIVERY,
+              ],
+            },
+          },
           { riderId: null, status: DeliveryTaskStatus.SEARCHING_RIDER },
         ],
       },
@@ -554,14 +665,24 @@ router.get("/history", requireAuth, requireRider, async (req, res, next) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const [data, total] = await Promise.all([
       prisma.deliveryTask.findMany({
-        where: { riderId: rider?.id, status: DeliveryTaskStatus.DELIVERED },
+        where: {
+          riderId: rider?.id,
+          status: {
+            in: [DeliveryTaskStatus.DELIVERED, DeliveryTaskStatus.CANCELLED],
+          },
+        },
         include: taskInclude,
-        orderBy: { deliveredAt: "desc" },
+        orderBy: { createdAt: "desc" },
         skip: (page - 1) * 20,
         take: 20,
       }),
       prisma.deliveryTask.count({
-        where: { riderId: rider?.id, status: DeliveryTaskStatus.DELIVERED },
+        where: {
+          riderId: rider?.id,
+          status: {
+            in: [DeliveryTaskStatus.DELIVERED, DeliveryTaskStatus.CANCELLED],
+          },
+        },
       }),
     ]);
     res.json({
