@@ -66,8 +66,8 @@ function loadRazorpayScript() {
 
 function CheckoutPageContent() {
   const { items, subtotal, deliveryFee, clearCart } = useCart();
-  const { firebaseUser } = useAuth();
-  const [customerName, setCustomerName] = useState("Guest user");
+  const { firebaseUser, user } = useAuth();
+  const [customerName, setCustomerName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [address, setAddress] = useState("");
   const [addressId, setAddressId] = useState<string | undefined>();
@@ -82,6 +82,7 @@ function CheckoutPageContent() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const profileName = user?.name?.trim() || firebaseUser?.displayName?.trim() || "Guest user";
   const discountedSubtotal = Math.max(0, subtotal - (appliedCoupon?.discount ?? 0));
   const estimatedTax = Math.round(discountedSubtotal * 0.05 * 100) / 100;
   const estimatedTotal = discountedSubtotal + deliveryFee + estimatedTax;
@@ -260,7 +261,7 @@ function CheckoutPageContent() {
           description: `Food order ${payload.data.orderNumber}`,
           order_id: payload.data.razorpayOrderId,
           prefill: {
-            name: customerName,
+            name: customerName || profileName,
             email: firebaseUser.email ?? undefined,
             contact: mobileDigits,
           },
@@ -370,7 +371,7 @@ function CheckoutPageContent() {
           <div className="mt-6 space-y-5">
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-[#4e493f]">Name</span>
-              <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
+              <input value={customerName || profileName} onChange={(event) => setCustomerName(event.target.value)} className="w-full rounded-xl border border-[#ded7cb] bg-[#f8f4ef] px-4 py-3 text-sm outline-none focus:border-[#d97732]" />
             </label>
 
             <label className="block">
