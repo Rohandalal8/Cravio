@@ -13,6 +13,7 @@ export default function ProfilePage() {
   const [pincode, setPincode] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     void api<Rider>("/rider/me")
       .then((value) => {
@@ -30,6 +31,7 @@ export default function ProfilePage() {
     event.preventDefault();
     setError("");
     setSaved(false);
+    setSaving(true);
     try {
       const updated = await api<Rider>("/rider/profile", {
         method: "PATCH",
@@ -45,6 +47,8 @@ export default function ProfilePage() {
       setSaved(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to save profile.");
+    } finally {
+      setSaving(false);
     }
   }
   return (
@@ -127,11 +131,14 @@ export default function ProfilePage() {
                 <input
                   value={pincode}
                   inputMode="numeric"
+                  pattern="[0-9]{6}"
                   onChange={(e) => setPincode(e.target.value)}
                 />
               </label>
               {error ? <p className="form-error">{error}</p> : null}
-              <button className="button">Save changes</button>
+              <button className="button" disabled={saving}>
+                {saving ? "Saving..." : "Save changes"}
+              </button>
             </form>
           </section>
           <section className="profile-card">

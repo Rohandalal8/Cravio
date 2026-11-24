@@ -171,7 +171,7 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
       },
     });
     const application = await prisma.riderApplication.findFirst({
-      where: { applicantId: req.user!.id, status: "APPROVED" },
+      where: { applicantId: req.user!.id },
       orderBy: { updatedAt: "desc" },
     });
     if (!rider) {
@@ -194,7 +194,10 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
         city: application?.city ?? null,
         state: application?.state ?? null,
         pincode: application?.pincode ?? null,
-        user,
+        user: {
+          ...user,
+          phone: user?.phone ?? application?.phone ?? null,
+        },
       },
     });
   } catch (error) {
@@ -245,12 +248,19 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
       });
       return;
     }
-    if ((address !== undefined && address.length < 5) ||
-      (pincode !== undefined && pincode.length < 4)) {
+    if (address && address.length < 5) {
       res.status(400).json({
         success: false,
-        message: "Address and pincode must be valid.",
+        message: "Enter a valid address.",
         code: "INVALID_ADDRESS",
+      });
+      return;
+    }
+    if (pincode && !/^\d{6}$/.test(pincode)) {
+      res.status(400).json({
+        success: false,
+        message: "Enter a valid 6-digit pincode.",
+        code: "INVALID_PINCODE",
       });
       return;
     }
@@ -264,7 +274,7 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
         },
       });
       const application = await transaction.riderApplication.findFirst({
-        where: { applicantId: req.user!.id, status: "APPROVED" },
+        where: { applicantId: req.user!.id },
         orderBy: { updatedAt: "desc" },
       });
       if (application) {
@@ -273,10 +283,10 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
           data: {
             ...(name ? { fullName: name } : {}),
             ...(phone ? { phone: normalizedPhone } : {}),
-            ...(address !== undefined ? { address } : {}),
-            ...(city !== undefined ? { city } : {}),
-            ...(state !== undefined ? { state } : {}),
-            ...(pincode !== undefined ? { pincode } : {}),
+            ...(address ? { address } : {}),
+            ...(city ? { city } : {}),
+            ...(state ? { state } : {}),
+            ...(pincode ? { pincode } : {}),
           },
         });
       }
@@ -295,7 +305,7 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
       },
     });
     const application = await prisma.riderApplication.findFirst({
-      where: { applicantId: req.user!.id, status: "APPROVED" },
+      where: { applicantId: req.user!.id },
       orderBy: { updatedAt: "desc" },
     });
     res.json({
@@ -307,7 +317,10 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
         city: application?.city ?? null,
         state: application?.state ?? null,
         pincode: application?.pincode ?? null,
-        user,
+        user: {
+          ...user,
+          phone: user?.phone ?? application?.phone ?? null,
+        },
       },
     });
   } catch (error) {
