@@ -221,6 +221,70 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
   }
 });
 
+router.get("/profile", requireAuth, requireRider, async (req, res, next) => {
+  try {
+    const rider = await getRider(req.user!.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatar: true,
+        createdAt: true,
+      },
+    });
+    const approvedApplication = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: "APPROVED" },
+      orderBy: { updatedAt: "desc" },
+    });
+    const application =
+      approvedApplication ??
+      (await prisma.riderApplication.findFirst({
+        where: { applicantId: req.user!.id },
+        orderBy: { updatedAt: "desc" },
+      }));
+
+    if (!rider) {
+      res.status(404).json({
+        success: false,
+        message: "Rider profile is not provisioned.",
+        code: "RIDER_NOT_PROVISIONED",
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...rider,
+        fullName: application?.fullName ?? user?.name ?? null,
+        address: application?.address ?? null,
+        city: application?.city ?? null,
+        state: application?.state ?? null,
+        pincode: application?.pincode ?? null,
+        application: application
+          ? {
+              fullName: application.fullName,
+              phone: application.phone,
+              address: application.address,
+              city: application.city,
+              state: application.state,
+              pincode: application.pincode,
+            }
+          : null,
+        user: {
+          ...user,
+          phone: user?.phone ?? application?.phone ?? null,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
   try {
     const name =

@@ -15,7 +15,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   useEffect(() => {
-    void api<Rider>("/rider/me")
+    void api<Rider>("/rider/profile")
       .then((value) => {
         setRider(value);
         setName(value.application?.fullName ?? value.fullName ?? value.user.name ?? "");
