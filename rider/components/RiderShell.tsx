@@ -41,6 +41,14 @@ export type Rider = {
   city: string | null;
   state: string | null;
   pincode: string | null;
+  application?: {
+    fullName: string | null;
+    phone: string;
+    address: string;
+    city: string | null;
+    state: string | null;
+    pincode: string | null;
+  } | null;
   user: {
     name: string | null;
     email: string | null;

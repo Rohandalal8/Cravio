@@ -18,12 +18,12 @@ export default function ProfilePage() {
     void api<Rider>("/rider/me")
       .then((value) => {
         setRider(value);
-        setName(value.fullName ?? value.user.name ?? "");
-        setPhone(value.user.phone ?? "");
-        setAddress(value.address ?? "");
-        setCity(value.city ?? "");
-        setState(value.state ?? "");
-        setPincode(value.pincode ?? "");
+        setName(value.application?.fullName ?? value.fullName ?? value.user.name ?? "");
+        setPhone(value.user.phone ?? value.application?.phone ?? "");
+        setAddress(value.application?.address ?? value.address ?? "");
+        setCity(value.application?.city ?? value.city ?? "");
+        setState(value.application?.state ?? value.state ?? "");
+        setPincode(value.application?.pincode ?? value.pincode ?? "");
       })
       .catch((cause: Error) => setError(cause.message));
   }, []);

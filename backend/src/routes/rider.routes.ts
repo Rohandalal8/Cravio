@@ -170,10 +170,16 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
         createdAt: true,
       },
     });
-    const application = await prisma.riderApplication.findFirst({
-      where: { applicantId: req.user!.id },
+    const approvedApplication = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: "APPROVED" },
       orderBy: { updatedAt: "desc" },
     });
+    const application =
+      approvedApplication ??
+      (await prisma.riderApplication.findFirst({
+        where: { applicantId: req.user!.id },
+        orderBy: { updatedAt: "desc" },
+      }));
     if (!rider) {
       res
         .status(404)
@@ -194,6 +200,16 @@ router.get("/me", requireAuth, requireRider, async (req, res, next) => {
         city: application?.city ?? null,
         state: application?.state ?? null,
         pincode: application?.pincode ?? null,
+        application: application
+          ? {
+              fullName: application.fullName,
+              phone: application.phone,
+              address: application.address,
+              city: application.city,
+              state: application.state,
+              pincode: application.pincode,
+            }
+          : null,
         user: {
           ...user,
           phone: user?.phone ?? application?.phone ?? null,
@@ -273,10 +289,16 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
             ...(phone ? { phone: normalizedPhone } : {}),
         },
       });
-      const application = await transaction.riderApplication.findFirst({
-        where: { applicantId: req.user!.id },
+      const approvedApplication = await transaction.riderApplication.findFirst({
+        where: { applicantId: req.user!.id, status: "APPROVED" },
         orderBy: { updatedAt: "desc" },
       });
+      const application =
+        approvedApplication ??
+        (await transaction.riderApplication.findFirst({
+          where: { applicantId: req.user!.id },
+          orderBy: { updatedAt: "desc" },
+        }));
       if (application) {
         await transaction.riderApplication.update({
           where: { id: application.id },
@@ -304,10 +326,16 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
         createdAt: true,
       },
     });
-    const application = await prisma.riderApplication.findFirst({
-      where: { applicantId: req.user!.id },
+    const approvedApplication = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: "APPROVED" },
       orderBy: { updatedAt: "desc" },
     });
+    const application =
+      approvedApplication ??
+      (await prisma.riderApplication.findFirst({
+        where: { applicantId: req.user!.id },
+        orderBy: { updatedAt: "desc" },
+      }));
     res.json({
       success: true,
       data: {
@@ -317,6 +345,16 @@ router.patch("/profile", requireAuth, requireRider, async (req, res, next) => {
         city: application?.city ?? null,
         state: application?.state ?? null,
         pincode: application?.pincode ?? null,
+        application: application
+          ? {
+              fullName: application.fullName,
+              phone: application.phone,
+              address: application.address,
+              city: application.city,
+              state: application.state,
+              pincode: application.pincode,
+            }
+          : null,
         user: {
           ...user,
           phone: user?.phone ?? application?.phone ?? null,
