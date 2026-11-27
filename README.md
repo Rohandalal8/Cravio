@@ -315,8 +315,10 @@ RAZORPAY_KEY_SECRET=your-razorpay-secret
 For Supabase, prefer the IPv4-compatible PostgreSQL session pooler URL:
 
 ```text
-postgresql://postgres.project-ref:password@aws-region.pooler.supabase.com:5432/postgres
+postgresql://postgres.project-ref:password@aws-region.pooler.supabase.com:5432/postgres?connection_limit=1
 ```
+
+The backend defaults each Prisma client to one database connection to avoid exhausting the session pool across Vercel serverless instances. An explicit `connection_limit` in `DATABASE_URL` is preserved.
 
 ## Database setup
 

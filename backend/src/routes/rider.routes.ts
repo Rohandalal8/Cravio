@@ -19,6 +19,7 @@ const taskInclude = {
           name: true,
           phone: true,
           address: true,
+          city: true,
           latitude: true,
           longitude: true,
         },
@@ -81,6 +82,56 @@ function distanceKm(
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function normalizeCity(city: string | null | undefined) {
+  const normalized = city?.trim().toLowerCase();
+  return normalized && normalized !== "unknown" ? normalized : null;
+}
+
+function isWithinRiderArea({
+  riderCity,
+  deliveryCity,
+  riderLatitude,
+  riderLongitude,
+  deliveryLatitude,
+  deliveryLongitude,
+}: {
+  riderCity: string | null;
+  deliveryCity: string | null | undefined;
+  riderLatitude: number | null;
+  riderLongitude: number | null;
+  deliveryLatitude: number | null;
+  deliveryLongitude: number | null;
+}) {
+  const normalizedRiderCity = normalizeCity(riderCity);
+  const normalizedDeliveryCity = normalizeCity(deliveryCity);
+  if (
+    normalizedRiderCity &&
+    normalizedDeliveryCity &&
+    (normalizedDeliveryCity.includes(normalizedRiderCity) ||
+      normalizedRiderCity.includes(normalizedDeliveryCity))
+  ) {
+    return true;
+  }
+
+  if (
+    riderLatitude !== null &&
+    riderLongitude !== null &&
+    deliveryLatitude !== null &&
+    deliveryLongitude !== null
+  ) {
+    return (
+      distanceKm(
+        riderLatitude,
+        riderLongitude,
+        deliveryLatitude,
+        deliveryLongitude,
+      ) <= 25
+    );
+  }
+
+  return !normalizedRiderCity || !normalizedDeliveryCity;
 }
 
 function routeParam(value: string | string[] | undefined) {
@@ -579,25 +630,16 @@ router.get("/deliveries", requireAuth, requireRider, async (req, res, next) => {
     const filteredTasks = tasks.filter((task) => {
       if (task.riderId === rider.id) return true;
       if (task.riderId) return false;
-      const deliveryCity =
-        task.order.address?.city?.trim() ||
-        task.order.restaurant.address?.trim() ||
-        "";
-      if (riderCity && deliveryCity.toLowerCase().includes(riderCity.toLowerCase())) return true;
-      if (
-        rider.currentLatitude !== null &&
-        rider.currentLongitude !== null &&
-        task.deliveryLatitude !== null &&
-        task.deliveryLongitude !== null
-      ) {
-        return distanceKm(
-          rider.currentLatitude,
-          rider.currentLongitude,
-          task.deliveryLatitude,
-          task.deliveryLongitude,
-        ) <= 25;
-      }
-      return false;
+      return isWithinRiderArea({
+        riderCity,
+        deliveryCity:
+          normalizeCity(task.order.address?.city) ??
+          task.order.restaurant.city,
+        riderLatitude: rider.currentLatitude,
+        riderLongitude: rider.currentLongitude,
+        deliveryLatitude: task.deliveryLatitude,
+        deliveryLongitude: task.deliveryLongitude,
+      });
     });
     res.json({ success: true, data: filteredTasks });
   } catch (error) {
@@ -665,13 +707,17 @@ router.post(
           return null;
         const riderCity = await getRiderCity(req.user!.id);
         const deliveryCity =
-          current.order.address?.city?.trim() ||
-          current.order.restaurant.city?.trim() ||
-          "";
+          normalizeCity(current.order.address?.city) ??
+          current.order.restaurant.city;
         if (
-          riderCity &&
-          deliveryCity &&
-          !deliveryCity.toLowerCase().includes(riderCity.toLowerCase())
+          !isWithinRiderArea({
+            riderCity,
+            deliveryCity,
+            riderLatitude: rider.currentLatitude,
+            riderLongitude: rider.currentLongitude,
+            deliveryLatitude: current.deliveryLatitude,
+            deliveryLongitude: current.deliveryLongitude,
+          })
         ) {
           return null;
         }
