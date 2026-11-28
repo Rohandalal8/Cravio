@@ -691,6 +691,7 @@ router.post(
             message: "Rider must be online and available.",
             code: "RIDER_UNAVAILABLE",
           });
+      const riderCity = await getRiderCity(req.user!.id);
       const task = await prisma.$transaction(async (transaction) => {
         const taskId = routeParam(req.params.id);
         const current = taskId
@@ -705,7 +706,6 @@ router.post(
           current.riderId
         )
           return null;
-        const riderCity = await getRiderCity(req.user!.id);
         const deliveryCity =
           normalizeCity(current.order.address?.city) ??
           current.order.restaurant.city;
